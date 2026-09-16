@@ -132,10 +132,11 @@ check("the live stage places captions with it",
   /anchor\.style\.transform = spot\.transform/.test(previewSource));
 check("the style cards place captions with it too",
   /label\.style\.transform = spot\.transform/.test(previewSource));
-check("a card scales its type against its own frame width",
-  /sizeFactor\(width\)/.test(previewSource));
-check("a card's look comes from its own preset, not the panel's settings",
-  /presetSettings\(preset\)/.test(previewSource) && !/buildPreview\(preset, \{ settings: presetSettings/.test(previewSource));
+check("a card keeps the stylesheet's readable size",
+  !/function scaleCard[\s\S]{0,700}applyTextStyle/.test(previewSource),
+  "cards are a picker, so they do not scale type with the comp");
+check("a card's position comes from its own preset",
+  /presetSettings\(preset\)/.test(previewSource));
 check("the cards wait for layout before scaling",
   /requestAnimationFrame\(function \(\) \{ scaleCard\(frame, preset\); \}\)/.test(previewSource));
 

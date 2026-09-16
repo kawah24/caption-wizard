@@ -519,12 +519,13 @@
   }
 
   /**
-   * Size and place a card's caption the way the live stage does.
+   * Place a card's caption where its style puts it.
    *
-   * A card box is not the comp's shape, so the text is scaled against the card's
-   * own width - the same rule the stage and the host script use. That is what
-   * makes a card honest about how large and how high a style really is, instead
-   * of drawing every style at the same 13px in the same spot.
+   * Deliberately does not touch the type size. At a card's width the honest
+   * scale works out around 8-9px, which is too small to read: a card is a picker,
+   * not a proof, so the stylesheet keeps every card legible at one size. The
+   * position still follows the style, so a style that sits low in the comp does
+   * sit low in its card.
    */
   function scaleCard(frame, preset) {
     if (!frame) return;
@@ -532,13 +533,10 @@
     var label = frame.getElementsByClassName("pv-text")[0];
     if (!label) return;
 
-    var width = frame.clientWidth || 0;
-    if (!width) return;
+    if (!frame.clientWidth) return;
 
     var settings = presetSettings(preset);
     if (!settings) return;
-
-    applyTextStyle(label, preset, settings, sizeFactor(width));
 
     var spot = captionPlacement(settings);
     label.style.position = "absolute";
