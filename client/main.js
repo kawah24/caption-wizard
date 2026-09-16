@@ -555,7 +555,8 @@
 
     var payload = JSON.stringify({
       captions: plan.captions,
-      style: currentSettings()
+      style: currentSettings(),
+      replacePrevious: !!(el.replacePrevious && el.replacePrevious.checked)
     });
 
     callHost("lcp_create", payload, function (result) {
@@ -571,7 +572,18 @@
         return;
       }
 
-      var message = "Created " + result.created + " text layer(s).";
+      // Report what the comp actually gained. Glow adds a backdrop layer behind
+      // every text layer, so the plain total would overstate the caption count.
+      var message = "Created " + result.created + " text layer(s)";
+      if (result.backdrops) {
+        message += " (" + result.text + " caption" + (result.text === 1 ? "" : "s") +
+                   " + " + result.backdrops + " glow backdrop" +
+                   (result.backdrops === 1 ? "" : "s") + ")";
+      }
+      message += ".";
+      if (result.removed) {
+        message = "Replaced " + result.removed + " previous layer(s). " + message;
+      }
       if (result.warnings && result.warnings.length) {
         message += "\n" + result.warnings.join("\n");
       }
@@ -968,6 +980,7 @@
     el.generateBtn = byId("generateBtn");
     el.refreshBtn = byId("refreshBtn");
     el.clearGeneratedBtn = byId("clearGeneratedBtn");
+    el.replacePrevious = byId("replacePrevious");
     el.status = byId("status");
     el.cepBanner = byId("cepBanner");
     el.srtFile = byId("srtFile");

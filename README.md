@@ -1,9 +1,9 @@
 # Caption Wizard
 
-A local-only caption panel for **After Effects 2022+** (CEP 11), version 1.1.0.
+A local-only caption panel for **After Effects 2022+** (CEP 11), version 1.2.0.
 
 No sign-in. No account. No licence key. No subscription tier. No telemetry. The
-extension itself makes no network requests at all — it parses your transcript in
+extension itself makes no network requests at all - it parses your transcript in
 the page and creates text layers directly in the active composition.
 
 It can also **transcribe audio on this machine** (ffmpeg + faster-whisper), so
@@ -14,7 +14,7 @@ anywhere.
 
 ## Install (Windows)
 
-### Option A — the helper script
+### Option A - the helper script
 
 1. Close After Effects.
 2. Right-click `install.ps1` → **Run with PowerShell**.
@@ -26,7 +26,7 @@ The script copies this folder to
 documented switch for loading an unsigned extension. It is per-user and touches
 nothing else.
 
-### Option B — manual
+### Option B - manual
 
 1. Copy this folder to `%APPDATA%\Adobe\CEP\extensions\caption-wizard`
    (the folder must contain `CSXS\manifest.xml` directly).
@@ -46,15 +46,15 @@ defaults write com.adobe.CSXS.11 PlayerDebugMode 1
 
 ## Using the panel
 
-**Text tab** — one caption per line, or paste/load an SRT to keep your own
+**Text tab** - one caption per line, or paste/load an SRT to keep your own
 timecodes. `Load SRT...` reads the file locally; nothing is uploaded.
 
-**Style tab** — pick one of the nineteen built-in presets and tune it. The panel
+**Style tab** - pick one of the nineteen built-in presets and tune it. The panel
 opens on **Karaoke** with **Anton** at 84px, uppercase, pink highlight on white,
-bolding off, 3 words per caption — the shipping look, and any of it can be changed
+bolding off, 3 words per caption - the shipping look, and any of it can be changed
 and is then remembered per preset.
 
-**If the chosen font is not installed, everything falls back to Arial** — the
+**If the chosen font is not installed, everything falls back to Arial** - the
 preview, the layers created in the composition, and the status line all say so.
 Arial ships with every Windows and macOS install, so a style can never end up
 with no usable font.
@@ -98,7 +98,7 @@ that reads as edited:
 | Glow | A glow behind the text: **Glow colour** and a **Glow amount** slider. It is drawn on a duplicate of each layer placed *underneath*, because After Effects' Glow effect composites over the layer's own pixels and at high strengths brightens the glyphs themselves |
 | Background bar | A solid bar behind the caption, sized from the text itself, with its own colour, opacity and padding |
 
-Controls that belong to a switch only appear while that switch is on — turn on
+Controls that belong to a switch only appear while that switch is on - turn on
 **Drop shadow** and the colour and amount controls appear under it, turn on
 **Glow** and its slider appears next to it. The same applies to the outline
 colour/width and the background bar's colour, opacity and padding.
@@ -122,27 +122,31 @@ That is the difference from Word Punch, which shows one word at a time.
 How it is built: each phrase becomes one text layer per word, all spanning the
 phrase, laid out as a single centred line. Word widths are measured with
 `sourceRectAtTime`, and the gap between words is recovered by measuring the same
-phrase as one line — so the result matches the spacing of a normal text layer
+phrase as one line - so the result matches the spacing of a normal text layer
 instead of guessing. Each word then gets hold-interpolated colour keyframes
 (`Other words` → `Spoken word`) across its own timing window, plus an optional
 scale pop.
 
 It needs **real word timings**. A local transcription supplies them exactly.
-Pasted plain text does not, so the panel estimates them from the cue duration —
+Pasted plain text does not, so the panel estimates them from the cue duration -
 workable, but a transcription will always look tighter.
 
 Two things to know:
 
 - One phrase becomes N layers (one per word), so a long karaoke transcript makes
   a lot of layers. That is the honest cost of doing it without text animators.
+- With **Glow** on, each of those layers also gets a backdrop duplicate placed
+  underneath it (named `glow - ...`), so the layer count doubles. That is how the
+  halo stays behind the text instead of washing out the karaoke highlight. The
+  panel reports both numbers so the total is never a surprise.
 - The approach deliberately avoids text-animator range selectors. Their match
   names vary between AE versions and could not be validated without a live host,
   whereas `addText` / `sourceRectAtTime` / Source Text keyframes are
   long-standing API.
 
 The **Font** picker lists the fonts After Effects reports through `app.fonts`
-(After Effects 24.0 and newer), so it is your real installed font list — 650
-families on this machine — and you type in the filter box to narrow it. On older
+(After Effects 24.0 and newer), so it is your real installed font list - 650
+families on this machine - and you type in the filter box to narrow it. On older
 versions, or if that API is unavailable, the panel says so and falls back to a
 small built-in list.
 
@@ -154,7 +158,7 @@ small built-in list.
 | Gap between captions | Silence inserted between generated cues |
 | Offset | Shifts every cue earlier or later |
 
-Cues that already carry timecodes — SRT, or a local transcription — keep their
+Cues that already carry timecodes - SRT, or a local transcription - keep their
 own timings; only the offset is applied.
 
 ### Sizes are relative to a 1920px comp
@@ -167,25 +171,29 @@ and vertical position are percentages of the comp, so they already adapt.
 
 **Buttons**
 
-- `Generate Captions` — creates the text layers in the active comp inside a
-  single undo group.
-- `Clear Generated` — removes **only** the layers this panel created. Every
+- `Generate Captions` - creates the text layers in the active comp inside a
+  single undo group. With **Replace previous captions** ticked (the default) it
+  first removes the layers this panel previously made, so generating twice
+  rebuilds the captions instead of stacking a second set on top. The clear and
+  the rebuild share one undo group, so a single Ctrl+Z brings the old captions
+  back.
+- `Clear Generated` - removes **only** the layers this panel created. Every
   layer is tagged `LCP::created` in its comment, and only tagged layers are ever
   deleted.
-- `Refresh` — re-checks the host handshake, the font list, and the active comp.
+- `Refresh` - re-checks the host handshake, the font list, and the active comp.
 
 ---
 
 ## Auto caption (offline)
 
-The **Auto** tab transcribes **the video that is already open** — no file
+The **Auto** tab transcribes **the video that is already open** - no file
 browsing. On load, and again on **Refresh**, the panel asks the composition which
 media to use: your selected layer if it carries audio, otherwise the first layer
 with an audio-bearing file. `Use active comp video` re-reads it, and
 `Choose a different file...` overrides with anything on disk.
 
 The layer's own **start time is applied as the timing offset**, so captions line
-up even when the clip does not begin at zero — media time *t* sits at composition
+up even when the clip does not begin at zero - media time *t* sits at composition
 time *t + startTime*, which is why that offset is not optional. The status line
 says when it was applied, and a clip with no audio track is flagged rather than
 transcribed silently into nothing.
@@ -233,7 +241,7 @@ this machine a 15-second clip with the `tiny` model takes about
 **two seconds** end to end. GPU is opt-in: pass `--device cuda` to the script
 and it will try CUDA, falling back to CPU if the CUDA runtime cannot load.
 
-(`device="auto"` is deliberately not used — on a machine with a partial CUDA
+(`device="auto"` is deliberately not used - on a machine with a partial CUDA
 runtime it picks the GPU, model construction succeeds, and then the first
 inference dies with "Library cublas64_12.dll is not found or cannot be loaded".)
 
@@ -251,7 +259,7 @@ the transcript box and the panel falls back to parsing what you typed.
 ### If the panel says Node integration is unavailable
 
 CEP reads the manifest's `CEFCommandLine` flags **once, when After Effects
-starts** — not when a panel is opened. So after the manifest gains
+starts** - not when a panel is opened. So after the manifest gains
 `--enable-nodejs`, an already-running After Effects keeps the old CEF process
 and the panel will still report Node as unavailable.
 
@@ -277,11 +285,11 @@ Two ways to see a style before it reaches After Effects.
 
 **In the panel.** The Style tab opens with a live preview stage: a 16:9 frame
 showing the selected style at its real font, size, spacing, colour, outline and
-position. It repaints immediately as you change anything — font, size, colours,
-tracking, uppercase, position — without needing to generate anything.
+position. It repaints immediately as you change anything - font, size, colours,
+tracking, uppercase, position - without needing to generate anything.
 
 The stage shows a **real caption from your transcript**, not a stock line: the
-first caption with 2–6 words, so a style is never judged on a single word or on
+first caption with 2-6 words, so a style is never judged on a single word or on
 an over-long line. Edit the transcript and the stage follows. With nothing
 loaded it falls back to a sample line, and the status line always says which one
 you are looking at.
@@ -331,7 +339,7 @@ under the stage says why:
 - It warns when **bold is not available** for the chosen family. Chromium would
   otherwise synthesise a bold face, making the preview heavier and wider than
   the comp, where After Effects falls back to the regular weight.
-- Shadow and glow are **approximations** — flat halos drawn with CSS, where
+- Shadow and glow are **approximations** - flat halos drawn with CSS, where
   After Effects applies its own Drop Shadow and Glow effects. The glow is drawn
   *behind* the text in both cases, so neither can wash out the letters; the
   falloff still differs.
@@ -367,7 +375,7 @@ resolves fonts by PostScript name.
 
 | Path | Purpose |
 | --- | --- |
-| `CSXS/manifest.xml` | CEP manifest — bundle `com.captionwizard.panel`, host AEFT, Node enabled |
+| `CSXS/manifest.xml` | CEP manifest - bundle `com.captionwizard.panel`, host AEFT, Node enabled |
 | `.debug` | Dev-load switch for the unsigned bundle |
 | `client/index.html` | Panel markup: Text / Style / Timing / Auto tabs |
 | `client/style.css` | Panel styling and the CSS preview animations |

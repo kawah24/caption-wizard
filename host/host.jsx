@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.1.0"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.0"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.1.0";
+var LCP_VERSION = "1.2.0";
 var LCP_TAG = "LCP::created";
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
@@ -359,6 +359,7 @@ function lcp_addKaraokePhrase(comp, caption, style) {
   var layers = [];
   var widths = [];
   var total = 0;
+  var backdrops = 0;
 
   for (i = 0; i < count; i++) {
     var wordText = lcp_applyCase(words[i].text, style);
@@ -405,12 +406,12 @@ function lcp_addKaraokePhrase(comp, caption, style) {
 
     // The backdrop is taken after the colour keys are set, so its glow follows
     // the highlight, and it inherits the word's own position and timing keys.
-    if (style.applyGlow) lcp_addGlowBackdrop(comp, layers[i], karaokeStyle);
+    if (style.applyGlow && lcp_addGlowBackdrop(comp, layers[i], karaokeStyle)) backdrops++;
 
     cursor += widths[i] + spaceWidth;
   }
 
-  return count;
+  return { text: count, backdrops: backdrops };
 }
 
 /** Colour highlight, optional pop, and the phrase's own fade for one word. */
@@ -1065,7 +1066,12 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
   }
 }
 
-/** Create a single text layer for one block of caption text. */
+/**
+ * Create a single text layer for one block of caption text.
+ *
+ * Returns the layer count it took - the text layer, plus a glow backdrop when
+ * the style asks for one - so callers can report what the comp really gained.
+ */
 function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
   var layer = comp.layers.addText(String(text));
 
@@ -1100,7 +1106,7 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
     lcp_applyMotion(glowBackdrop, style, comp, glowBackdrop.inPoint, glowBackdrop.outPoint, [baseX, baseY]);
   }
 
-  return layer;
+  return { text: 1, backdrops: glowBackdrop ? 1 : 0 };
 }
 
 /**
@@ -1129,7 +1135,13 @@ function lcp_create(payloadJson) {
   var style = payload.style || {};
   var wordByWord = !!style.wordByWord;
 
+  // The panel asks for this by default: generating a second time should rebuild
+  // the captions rather than stack another copy on top of the first.
+  var replacePrevious = !!payload.replacePrevious;
+
   var created = 0;
+  var backdrops = 0;
+  var removed = 0;
   var errors = [];
   var warnings = [];
   var i;
@@ -1139,19 +1151,25 @@ function lcp_create(payloadJson) {
 
   app.beginUndoGroup("Caption Wizard: Generate Captions");
   try {
+    // Clearing inside this undo group keeps replacing a single undo step: one
+    // Ctrl+Z brings the previous captions back, not just the last layer.
+    if (replacePrevious) removed = lcp_removeTagged(comp);
+
     for (i = 0; i < payload.captions.length; i++) {
       var caption = payload.captions[i];
       try {
         if (style.karaoke && caption.words && caption.words.length > 1) {
           // Karaoke keeps the whole phrase and highlights the spoken word.
-          created += lcp_addKaraokePhrase(comp, caption, style);
+          var karaokeAdded = lcp_addKaraokePhrase(comp, caption, style);
+          created += karaokeAdded.text;
+          backdrops += karaokeAdded.backdrops;
         } else if (wordByWord && caption.words && caption.words.length) {
           for (j = 0; j < caption.words.length; j++) {
             var word = caption.words[j];
             // The panel marks power words, so emphasis is one decision made in
             // one place rather than two rules that can drift apart.
             var wordStyle = word.emphasis ? lcp_emphasisStyle(style) : style;
-            lcp_addLayer(
+            var wordAdded = lcp_addLayer(
               comp,
               lcp_applyCase(word.text, style),
               lcp_num(word.startMs, caption.startMs) / 1000,
@@ -1159,10 +1177,11 @@ function lcp_create(payloadJson) {
               wordStyle,
               false
             );
-            created++;
+            created += wordAdded.text;
+            backdrops += wordAdded.backdrops;
           }
         } else {
-          lcp_addLayer(
+          var blockAdded = lcp_addLayer(
             comp,
             lcp_splitLines(lcp_applyCase(caption.text, style), style.lines, style.maxWords),
             lcp_num(caption.startMs, 0) / 1000,
@@ -1170,7 +1189,8 @@ function lcp_create(payloadJson) {
             style,
             !wordByWord
           );
-          created++;
+          created += blockAdded.text;
+          backdrops += blockAdded.backdrops;
         }
       } catch (captionError) {
         errors.push("Caption " + (i + 1) + ": " + captionError.toString());
@@ -1196,11 +1216,39 @@ function lcp_create(payloadJson) {
   }
   _lcpEffectLog = null;
 
-  return '{"ok":true,"created":' + created + ',"errors":' + lcp_jsonStringArray(errors) +
+  // "created" stays the total layer count; text and backdrops break it down, so
+  // the panel can say where the layers went instead of implying they are all
+  // captions.
+  return '{"ok":true,"created":' + (created + backdrops) +
+         ',"text":' + created + ',"backdrops":' + backdrops +
+         ',"removed":' + removed +
+         ',"errors":' + lcp_jsonStringArray(errors) +
          ',"warnings":' + lcp_jsonStringArray(warnings) + "}";
 }
 
 /** Remove only the layers tagged by this panel. */
+/**
+ * Remove the layers this panel tagged, and report how many went.
+ *
+ * No undo group of its own, so lcp_clear and lcp_create can wrap the removal and
+ * whatever follows it into a single undoable step.
+ */
+function lcp_removeTagged(comp) {
+  var removed = 0;
+  if (!comp) return removed;
+
+  for (var i = comp.numLayers; i >= 1; i--) {
+    var layer = comp.layer(i);
+    var comment = "";
+    try { comment = layer.comment ? String(layer.comment) : ""; } catch (err) { comment = ""; }
+    if (comment.indexOf(LCP_TAG) === 0) {
+      layer.remove();
+      removed++;
+    }
+  }
+  return removed;
+}
+
 function lcp_clear() {
   var comp = lcp_activeComp();
   if (!comp) {
@@ -1208,19 +1256,10 @@ function lcp_clear() {
   }
 
   var removed = 0;
-  var i;
 
   app.beginUndoGroup("Caption Wizard: Clear Generated");
   try {
-    for (i = comp.numLayers; i >= 1; i--) {
-      var layer = comp.layer(i);
-      var comment = "";
-      try { comment = layer.comment ? String(layer.comment) : ""; } catch (err) { comment = ""; }
-      if (comment.indexOf(LCP_TAG) === 0) {
-        layer.remove();
-        removed++;
-      }
-    }
+    removed = lcp_removeTagged(comp);
   } finally {
     app.endUndoGroup();
   }

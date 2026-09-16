@@ -241,6 +241,204 @@ eq("parses numeric strings", sandbox.lcp_num("42", 7), 42);
 eq("uses the fallback for junk", sandbox.lcp_num("junk", 7), 7);
 eq("uses the fallback for undefined", sandbox.lcp_num(undefined, 7), 7);
 
+/* ------------------------------------------------------------------ */
+/* generating: how many layers, and what replacing does                 */
+/*                                                                     */
+/* lcp_create and lcp_clear need a composition, so these run them against */
+/* a fake one. Only what the host actually touches is stubbed - enough  */
+/* to pin the layer arithmetic without After Effects.                   */
+/* ------------------------------------------------------------------ */
+
+sandbox.CompItem = function CompItem() {};
+
+function fakeCreateComp(width, height, duration) {
+  var layers = [];
+
+  function textDocument() {
+    return {
+      resetCharStyle: function () {},
+      font: "ArialMT",
+      fontSize: 72,
+      fillColor: [1, 1, 1],
+      strokeColor: [0, 0, 0]
+    };
+  }
+
+  function add(text) {
+    var doc = textDocument();
+    var props = {};
+    var layer = {
+      name: String(text),
+      comment: "",
+      inPoint: 0,
+      outPoint: 1,
+      startTime: 0,
+      containingComp: comp,
+      property: function (name) {
+        if (name === "Source Text") {
+          return {
+            get value() { return doc; },
+            setValue: function (next) { doc = next; },
+            setValueAtTime: function (time, next) { doc = next; }
+          };
+        }
+        if (name === "Effects") {
+          return {
+            numProperties: 0,
+            property: function () { return null; },
+            addProperty: function () {
+              return { property: function () { return { setValue: function () {} }; } };
+            }
+          };
+        }
+        if (!props[name]) {
+          props[name] = {
+            numProperties: 0,
+            property: function () { return null; },
+            setValue: function () {},
+            setValueAtTime: function () {}
+          };
+        }
+        return props[name];
+      },
+      duplicate: function () { return add(layer.name); },
+      moveAfter: function () {},
+      remove: function () {
+        var at = layers.indexOf(layer);
+        if (at >= 0) layers.splice(at, 1);
+      },
+      sourceRectAtTime: function () {
+        return { width: String(text).length * 10, height: 40 };
+      }
+    };
+    layers.push(layer);
+    return layer;
+  }
+
+  var comp = Object.create(sandbox.CompItem.prototype);
+  comp.width = width;
+  comp.height = height;
+  comp.duration = duration;
+  Object.defineProperty(comp, "numLayers", { get: function () { return layers.length; } });
+  comp.layer = function (index) { return layers[index - 1]; };
+  comp.layers = { addText: function (text) { return add(text); } };
+  comp.addUntagged = function (text) { return add(text); };
+  comp.allLayers = function () { return layers.slice(0); };
+  comp.taggedLayers = function () {
+    return layers.filter(function (l) { return String(l.comment).indexOf("LCP::created") === 0; });
+  };
+  return comp;
+}
+
+function baseStyle(overrides) {
+  var style = {
+    motion: "none",
+    fontSize: 72,
+    fill: "#ffffff",
+    karaoke: false,
+    wordByWord: false,
+    applyGlow: false,
+    applyShadow: false,
+    applyStroke: false,
+    applyBox: false,
+    karaokeDim: "#ffffff",
+    karaokeHighlight: "#ffd400",
+    posX: 50,
+    posY: 78,
+    inDurMs: 200,
+    outDurMs: 150
+  };
+  for (var key in overrides) { style[key] = overrides[key]; }
+  return style;
+}
+
+/** Run lcp_create against a comp, with the app stub it needs. */
+function runCreate(comp, captions, style, replacePrevious) {
+  sandbox.app = {
+    project: { activeItem: comp },
+    beginUndoGroup: function () {},
+    endUndoGroup: function () {},
+    fonts: { allFonts: [] }
+  };
+  return JSON.parse(sandbox.lcp_create(JSON.stringify({
+    captions: captions,
+    style: style,
+    replacePrevious: !!replacePrevious
+  })));
+}
+
+/** One caption with per-word timings, the way the panel sends it. */
+function phrase(text, startMs, endMs) {
+  var parts = text.split(" ");
+  var span = (endMs - startMs) / parts.length;
+  return {
+    text: text,
+    startMs: startMs,
+    endMs: endMs,
+    words: parts.map(function (word, index) {
+      return {
+        text: word,
+        startMs: Math.round(startMs + index * span),
+        endMs: Math.round(startMs + (index + 1) * span)
+      };
+    })
+  };
+}
+
+console.log("");
+console.log("generating layers: counts and replacing");
+
+var two = [phrase("Dolly writes", 0, 1000), phrase("always love", 1000, 2000)];
+
+var karaokeOff = fakeCreateComp(1080, 1920, 10);
+var offResult = runCreate(karaokeOff, two, baseStyle({ karaoke: true }), true);
+eq("karaoke, glow off: one layer per word", offResult.created, 4);
+eq("karaoke, glow off: all text", offResult.text, 4);
+eq("karaoke, glow off: no backdrops", offResult.backdrops, 0);
+eq("karaoke, glow off: the comp holds exactly that", karaokeOff.numLayers, 4);
+eq("karaoke, glow off: no probe layer left behind", karaokeOff.numLayers, 4);
+
+var karaokeOn = fakeCreateComp(1080, 1920, 10);
+var onResult = runCreate(karaokeOn, two, baseStyle({ karaoke: true, applyGlow: true }), true);
+eq("karaoke, glow on: a backdrop behind every word", onResult.backdrops, 4);
+eq("karaoke, glow on: text layers unchanged", onResult.text, 4);
+eq("karaoke, glow on: created counts both", onResult.created, 8);
+eq("karaoke, glow on: the comp really holds both", karaokeOn.numLayers, 8);
+eq("karaoke, glow on: backdrops are tagged for clearing", karaokeOn.taggedLayers().length, 8);
+
+var wordByWordComp = fakeCreateComp(1920, 1080, 10);
+var wordByWordResult = runCreate(wordByWordComp, two, baseStyle({ wordByWord: true }), true);
+eq("word by word: one layer per word", wordByWordResult.created, 4);
+
+var perCaptionComp = fakeCreateComp(1920, 1080, 10);
+var perCaptionResult = runCreate(perCaptionComp, two, baseStyle({}), true);
+eq("one layer per caption: one layer per caption", perCaptionResult.created, 2);
+
+var replaceComp = fakeCreateComp(1920, 1080, 10);
+runCreate(replaceComp, two, baseStyle({}), true);
+var secondRun = runCreate(replaceComp, two, baseStyle({}), true);
+eq("replacing: reports what it removed", secondRun.removed, 2);
+eq("replacing: the comp is not stacked", replaceComp.numLayers, 2);
+
+var stackComp = fakeCreateComp(1920, 1080, 10);
+runCreate(stackComp, two, baseStyle({}), false);
+runCreate(stackComp, two, baseStyle({}), false);
+eq("without replacing: layers stack", stackComp.numLayers, 4);
+
+var mixedComp = fakeCreateComp(1920, 1080, 10);
+mixedComp.addUntagged("my own title");
+runCreate(mixedComp, two, baseStyle({}), true);
+sandbox.app = {
+  project: { activeItem: mixedComp },
+  beginUndoGroup: function () {},
+  endUndoGroup: function () {},
+  fonts: { allFonts: [] }
+};
+var cleared = JSON.parse(sandbox.lcp_clear());
+eq("clear: removes the generated layers", cleared.removed, 2);
+eq("clear: leaves untagged layers alone", mixedComp.numLayers, 1);
+eq("clear: the survivor is the user's layer", mixedComp.allLayers()[0].name, "my own title");
+
 console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Font families installed on this machine, for the browser preview only.
  * Generated 2026-09-15 10:32 by tools/update-preview-fonts.ps1.
  * The real panel asks After Effects for its font list; this file exists so the
