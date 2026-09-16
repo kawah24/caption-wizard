@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.2.5"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.6"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.2.5";
+var LCP_VERSION = "1.2.6";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -1012,6 +1012,14 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
 
   var dx = comp.width * 0.06;
   var dy = comp.height * 0.06;
+
+  // Every style has to be positioned. The branches below only add animation, and a
+  // motion that animates scale or opacity alone never set a position at all - so
+  // the layer kept After Effects' default, which is the middle of the comp. That
+  // is why a neon, pulse or zoom caption ignored Horizontal and Vertical entirely
+  // while a slide caption obeyed them.
+  keyPosition(layer.inPoint, posX, posY);
+  keyPosition(inEnd, posX, posY);
 
   if (motion === "slideUp") {
     keyPosition(layer.inPoint, posX, posY + dy);

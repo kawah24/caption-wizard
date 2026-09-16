@@ -315,7 +315,14 @@ function fakeCreateComp(width, height, duration) {
         }
         return props[name];
       },
-      duplicate: function () { return add(layer.name); },
+      duplicate: function () {
+        // After Effects copies the layer's properties, keyframes included - which
+        // is what makes the karaoke glow backdrop follow its word.
+        var copy = add(layer.name);
+        copy._positions = layer._positions.slice(0);
+        copy.comment = layer.comment;
+        return copy;
+      },
       moveAfter: function () {},
       remove: function () {
         var at = layers.indexOf(layer);
@@ -535,6 +542,48 @@ check("the comp info counts the layers this panel made",
   compInfo.generated === placedComp.numLayers, compInfo.generated + " vs " + placedComp.numLayers);
 check("and still reports the comp's total layer count",
   compInfo.layers === placedComp.numLayers, String(compInfo.layers));
+
+console.log("");
+console.log("every preset positions its layers (this is what caught the neon bug)");
+
+var presetSandbox = { window: {} };
+vm.createContext(presetSandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "presets.js"), "utf8"), presetSandbox);
+var lcpPresets = presetSandbox.window.LcpPresets;
+
+var unpositioned = [];
+var misplaced = [];
+var motionsSeen = {};
+
+lcpPresets.PRESETS.forEach(function (preset) {
+  var comp = fakeCreateComp(1080, 1920, 10);
+  var settings = lcpPresets.resolveSettings(preset.id, {}, lcpPresets.TIMING_DEFAULTS);
+  motionsSeen[String(settings.motion)] = true;
+
+  runCreate(comp, [phrase("Dolly writes now", 0, 2000)], settings, true);
+
+  // The fake reports a box whose centre sits 10px below the anchor, so a layer
+  // that is placed correctly ends up 10px past the requested position.
+  var wantY = (lcpPresets.BASE_DEFAULTS.posY === undefined ? 78 : settings.posY) / 100 * 1920 + 10;
+
+  comp.allLayers().forEach(function (layer) {
+    if (!layer._positions.length) {
+      unpositioned.push(preset.id + " (" + settings.motion + ") layer \"" + layer.name + "\"");
+      return;
+    }
+    var settled = layer._positions[layer._positions.length - 1];
+    if (Math.abs(settled[1] - wantY) > 0.001) {
+      misplaced.push(preset.id + " y=" + Math.round(settled[1]) + " wanted " + Math.round(wantY));
+    }
+  });
+});
+
+check("no style leaves a layer unpositioned", unpositioned.length === 0,
+  unpositioned.slice(0, 4).join(" | "));
+check("every style settles on its own Vertical setting", misplaced.length === 0,
+  misplaced.slice(0, 4).join(" | "));
+check("all the presets were exercised", Object.keys(motionsSeen).length >= 10,
+  Object.keys(motionsSeen).sort().join(", "));
 
 console.log("");
 if (failures) {
