@@ -125,6 +125,22 @@ check("showTab shows the Generate area only for the style tab",
 check("showTab is given the style tab's id", tabIds.indexOf("style") >= 0);
 
 console.log("");
+console.log("coming back to the panel");
+
+var focusHandler = "";
+var focusAt = js.indexOf("root.onfocus");
+if (focusAt >= 0) {
+  var end = js.indexOf("\n    };", focusAt);
+  focusHandler = js.slice(focusAt, end < 0 ? focusAt + 500 : end);
+}
+check("the panel listens for focus", focusAt >= 0);
+check("it re-reads the active comp", focusHandler.indexOf("refreshCompInfo()") >= 0);
+check("it stands down while a job is running", focusHandler.indexOf("state.busy") >= 0);
+check("it throttles repeated focus events", focusHandler.indexOf("lastFocusCheck") >= 0);
+check("it never touches the chosen audio path", focusHandler.indexOf("useCompMedia") < 0);
+check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
+
+console.log("");
 console.log("styling for the markup");
 
 ["\\.footer", "\\.control-toggle", "\\.btn", "\\.status"].forEach(function (selector) {

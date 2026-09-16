@@ -1019,6 +1019,21 @@
     applyResponsiveLayout();
     root.onresize = applyResponsiveLayout;
 
+    // After Effects is a separate window, so switching comps there leaves this
+    // panel describing the old one until you press Refresh. Re-read the comp when
+    // the panel comes back to the front, which is exactly when a switch has just
+    // happened. Deliberately narrow: the audio path is left alone so a clip you
+    // chose by hand is never replaced, and the font list is not re-enumerated
+    // because it cannot change without one.
+    var lastFocusCheck = 0;
+    root.onfocus = function () {
+      var now = new Date().getTime();
+      if (state.busy || !state.hostReady) return;
+      if (now - lastFocusCheck < 1200) return;
+      lastFocusCheck = now;
+      refreshCompInfo();
+    };
+
     renderStyleGrid();
     renderStage();
     renderSettings();

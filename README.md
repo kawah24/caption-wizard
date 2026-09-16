@@ -181,7 +181,7 @@ and vertical position are percentages of the comp, so they already adapt.
 - `Clear Generated` — removes **only** the layers this panel created. Every
   layer is tagged `LCP::created` in its comment, and only tagged layers are ever
   deleted.
-- `Refresh` — re-checks the host handshake, the font list, and the active comp.
+- `Refresh` — re-checks the host handshake, the font list, and the active comp. The active comp is also re-read when the panel regains focus, so switching comps in After Effects is picked up as soon as you click back to the panel; the font list and the Auto Caption media only change on an explicit Refresh.
 
 ---
 
