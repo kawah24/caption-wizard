@@ -250,6 +250,7 @@ eq("uses the fallback for undefined", sandbox.lcp_num(undefined, 7), 7);
 /* ------------------------------------------------------------------ */
 
 sandbox.CompItem = function CompItem() {};
+sandbox.ParagraphJustification = { LEFT_JUSTIFY: 1, CENTER_JUSTIFY: 2, RIGHT_JUSTIFY: 3, FULL_JUSTIFY_LASTLINE_LEFT: 4 };
 
 function fakeCreateComp(width, height, duration) {
   var layers = [];
@@ -274,6 +275,8 @@ function fakeCreateComp(width, height, duration) {
       outPoint: 1,
       startTime: 0,
       containingComp: comp,
+      _doc: doc,
+      _positions: [],
       property: function (name) {
         if (name === "Source Text") {
           return {
@@ -281,6 +284,17 @@ function fakeCreateComp(width, height, duration) {
             setValue: function (next) { doc = next; },
             setValueAtTime: function (time, next) { doc = next; }
           };
+        }
+        if (name === "Position") {
+          if (!props[name]) {
+            props[name] = {
+              numProperties: 0,
+              property: function () { return null; },
+              setValue: function (value) { layer._positions.push(value); },
+              setValueAtTime: function (time, value) { layer._positions.push(value); }
+            };
+          }
+          return props[name];
         }
         if (name === "Effects") {
           return {
@@ -438,6 +452,45 @@ var cleared = JSON.parse(sandbox.lcp_clear());
 eq("clear: removes the generated layers", cleared.removed, 2);
 eq("clear: leaves untagged layers alone", mixedComp.numLayers, 1);
 eq("clear: the survivor is the user's layer", mixedComp.allLayers()[0].name, "my own title");
+
+console.log("");
+console.log("karaoke layout: the phrase follows Align, and every word follows the phrase");
+
+function karaokePositions(align, posX) {
+  var comp = fakeCreateComp(1080, 1920, 10);
+  var caption = phrase("Dolly Parton writes", 0, 2000);
+  runCreate(comp, [caption], baseStyle({ karaoke: true, align: align, posX: posX }), true);
+  var layers = comp.allLayers();
+  return {
+    xs: layers.map(function (l) { return l._positions[0][0]; }),
+    widths: layers.map(function (l) { return String(l.name).length * 10; }),
+    leftJustified: layers.every(function (l) { return l._doc.justification === 1; })
+  };
+}
+
+var anchor = 1080 * 0.5;
+var centred = karaokePositions("center", 50);
+var left = karaokePositions("left", 50);
+var right = karaokePositions("right", 50);
+
+check("karaoke words are always left-justified in the comp", centred.leftJustified,
+  "so a position value is the word's left edge");
+check("centred: the phrase straddles the horizontal position",
+  Math.abs((centred.xs[0] + centred.xs[2] + centred.widths[2]) / 2 - anchor) < 0.001,
+  (centred.xs[0] + centred.xs[2] + centred.widths[2]) / 2 + " vs " + anchor);
+check("left: the phrase starts on the horizontal position",
+  Math.abs(left.xs[0] - anchor) < 0.001, left.xs[0] + " vs " + anchor);
+check("right: the phrase ends on the horizontal position",
+  Math.abs(right.xs[2] + right.widths[2] - anchor) < 0.001,
+  (right.xs[2] + right.widths[2]) + " vs " + anchor);
+check("align moves the phrase without changing its length",
+  Math.abs((centred.xs[2] + centred.widths[2] - centred.xs[0]) -
+           (right.xs[2] + right.widths[2] - right.xs[0])) < 0.001);
+check("word order is preserved", centred.xs[0] < centred.xs[1] && centred.xs[1] < centred.xs[2],
+  centred.xs.join(", "));
+check("words keep their spacing on screen",
+  Math.abs((centred.xs[1] - centred.xs[0]) - (centred.widths[0] + 10)) < 0.001,
+  (centred.xs[1] - centred.xs[0]) + " for a word " + centred.widths[0] + " wide");
 
 console.log("");
 if (failures) {

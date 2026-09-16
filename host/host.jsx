@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.2.0"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.1"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.2.0";
+var LCP_VERSION = "1.2.1";
 var LCP_TAG = "LCP::created";
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
@@ -356,6 +356,13 @@ function lcp_addKaraokePhrase(comp, caption, style) {
   var karaokeStyle = lcp_copyStyle(style);
   karaokeStyle.fill = style.karaokeDim || "#9a9a9a";
 
+  // Each word is positioned from its measured width, so every word layer has to be
+  // left-justified: with the anchor at the text's left edge, a position value is
+  // the word's left edge. Align is applied to the phrase as a whole further down.
+  // Inheriting the panel's Align here silently shifted every word by half its own
+  // width whenever the style was not centred.
+  karaokeStyle.align = "left";
+
   var layers = [];
   var widths = [];
   var total = 0;
@@ -395,13 +402,19 @@ function lcp_addKaraokePhrase(comp, caption, style) {
     try { probe.remove(); } catch (e3) { /* leave it if it cannot be removed */ }
   }
 
-  var centerX = lcp_num(style.posX, 50) / 100 * comp.width;
+  var anchorX = lcp_num(style.posX, 50) / 100 * comp.width;
   var baseY = lcp_num(style.posY, 78) / 100 * comp.height;
   var lineWidth = total + spaceWidth * (count - 1);
-  var cursor = centerX - lineWidth / 2;
+
+  // Where the phrase starts, measured from the same anchor the preview uses:
+  // left starts on it, centre straddles it, right ends on it.
+  var align = String(style.align || "center");
+  var cursor = anchorX;
+  if (align === "center") cursor = anchorX - lineWidth / 2;
+  else if (align === "right") cursor = anchorX - lineWidth;
 
   for (i = 0; i < count; i++) {
-    var x = cursor + widths[i] / 2;
+    var x = cursor;
     lcp_animateKaraokeWord(layers[i], karaokeStyle, style, baseIn, baseOut, words[i], x, baseY);
 
     // The backdrop is taken after the colour keys are set, so its glow follows

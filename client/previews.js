@@ -321,6 +321,29 @@
   }
 
   /**
+   * Where a caption sits in its frame, given a style's position and alignment.
+   *
+   * Shared by the live stage and the style cards so the two cannot drift, and it
+   * mirrors what the host does to the composition: the anchor stays at the
+   * horizontal position and the alignment decides which side the text grows from.
+   */
+  function captionPlacement(settings) {
+    var align = String((settings && settings.align) || "center");
+    if (align !== "left" && align !== "right") align = "center";
+
+    var shift = align === "left" ? "0" : (align === "right" ? "-100%" : "-50%");
+    var posX = (settings && settings.posX !== undefined) ? settings.posX : 50;
+    var posY = (settings && settings.posY !== undefined) ? settings.posY : 78;
+
+    return {
+      align: align,
+      left: posX + "%",
+      top: posY + "%",
+      transform: "translate(" + shift + ", -50%)"
+    };
+  }
+
+  /**
    * The preview's animation cycle, from the style's in and out durations.
    *
    * The stage's keyframes are shared with the style cards and are percentage
@@ -485,6 +508,47 @@
     return frame;
   }
 
+  /** A preset's own settings: its shipped look, not the user's current edits. */
+  function presetSettings(preset) {
+    if (!preset || !root.LcpPresets || !root.LcpPresets.resolveSettings) return null;
+    try {
+      return root.LcpPresets.resolveSettings(preset.id, {}, root.LcpPresets.TIMING_DEFAULTS);
+    } catch (err) {
+      return null;
+    }
+  }
+
+  /**
+   * Size and place a card's caption the way the live stage does.
+   *
+   * A card box is not the comp's shape, so the text is scaled against the card's
+   * own width - the same rule the stage and the host script use. That is what
+   * makes a card honest about how large and how high a style really is, instead
+   * of drawing every style at the same 13px in the same spot.
+   */
+  function scaleCard(frame, preset) {
+    if (!frame) return;
+
+    var label = frame.getElementsByClassName("pv-text")[0];
+    if (!label) return;
+
+    var width = frame.clientWidth || 0;
+    if (!width) return;
+
+    var settings = presetSettings(preset);
+    if (!settings) return;
+
+    applyTextStyle(label, preset, settings, sizeFactor(width));
+
+    var spot = captionPlacement(settings);
+    label.style.position = "absolute";
+    label.style.paddingBottom = "0";
+    label.style.left = spot.left;
+    label.style.top = spot.top;
+    label.style.transform = spot.transform;
+    label.style.textAlign = spot.align;
+  }
+
   /** One clickable style card. */
   function buildCard(preset, opts) {
     var options = opts || {};
@@ -493,12 +557,23 @@
     card.setAttribute("data-style-id", preset.id);
     card.title = preset.blurb || preset.name;
 
-    card.appendChild(buildPreview(preset, { settings: options.settings }));
+    // A card shows the style's own shipped look, never the settings being edited:
+    // a grid that reflows while a slider is dragged is hard to choose from, and
+    // one style's oversized text would overflow every other card.
+    var frame = buildPreview(preset, { settings: options.settings });
+    card.appendChild(frame);
 
     var name = document.createElement("div");
     name.className = "style-card-name";
     name.textContent = preset.name;
     card.appendChild(name);
+
+    // The scale needs the card's real width, which only exists once the card is in
+    // the grid, so it lands on the next frame. Until then the label keeps its
+    // stylesheet size rather than flashing at the wrong one.
+    if (root.requestAnimationFrame) {
+      root.requestAnimationFrame(function () { scaleCard(frame, preset); });
+    }
 
     if (typeof options.onSelect === "function") {
       card.onclick = function () { options.onSelect(preset.id); };
@@ -600,10 +675,9 @@
     // Align works the way it does in After Effects: the anchor point stays at the
     // horizontal position and the justification decides which side the text
     // extends from. Ignoring it here meant the preview always looked centred.
-    var align = String(settings.align || "center");
-    anchor.style.textAlign = (align === "left" || align === "right") ? align : "center";
-    var shift = (align === "left") ? "0" : ((align === "right") ? "-100%" : "-50%");
-    anchor.style.transform = "translate(" + shift + ", -50%)";
+    var spot = captionPlacement(settings);
+    anchor.style.textAlign = spot.align;
+    anchor.style.transform = spot.transform;
 
     // Background bar: a padded box on the anchor, so the text stays centred.
     if (settings.applyBox) {
@@ -661,6 +735,9 @@
     motionClass: motionClass,
     motionCycleMs: motionCycleMs,
     sizeFactor: sizeFactor,
+    captionPlacement: captionPlacement,
+    presetSettings: presetSettings,
+    scaleCard: scaleCard,
     FALLBACK_FRAME_WIDTH: FALLBACK_FRAME_WIDTH,
     withKaraokeMarker: withKaraokeMarker,
     glowRadii: glowRadii,

@@ -91,6 +91,38 @@ eq("empty input is safe", P.familyForPostScript(""), "Arial");
 eq("null input is safe", P.familyForPostScript(null), "Arial");
 
 console.log("");
+console.log("caption placement, shared by the stage and the cards");
+
+check("centred: the box is centred on the position",
+  JSON.stringify(P.captionPlacement({ posX: 50, posY: 76, align: "center" })) ===
+  JSON.stringify({ align: "center", left: "50%", top: "76%", transform: "translate(-50%, -50%)" }),
+  JSON.stringify(P.captionPlacement({ posX: 50, posY: 76, align: "center" })));
+check("left: the left edge sits on the position",
+  P.captionPlacement({ posX: 20, posY: 70, align: "left" }).transform === "translate(0, -50%)");
+check("right: the right edge sits on the position",
+  P.captionPlacement({ posX: 20, posY: 70, align: "right" }).transform === "translate(-100%, -50%)");
+check("a nonsense alignment falls back to centred",
+  P.captionPlacement({ align: "middle" }).align === "center");
+check("missing values use the shipped defaults",
+  P.captionPlacement({}).left === "50%" && P.captionPlacement({}).top === "78%",
+  JSON.stringify(P.captionPlacement({})));
+check("no settings at all does not throw",
+  P.captionPlacement(null).align === "center");
+
+var previewSource = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
+check("the live stage places captions with it",
+  /captionPlacement\(settings\)/.test(previewSource) &&
+  /anchor\.style\.transform = spot\.transform/.test(previewSource));
+check("the style cards place captions with it too",
+  /label\.style\.transform = spot\.transform/.test(previewSource));
+check("a card scales its type against its own frame width",
+  /sizeFactor\(width\)/.test(previewSource));
+check("a card's look comes from its own preset, not the panel's settings",
+  /presetSettings\(preset\)/.test(previewSource) && !/buildPreview\(preset, \{ settings: presetSettings/.test(previewSource));
+check("the cards wait for layout before scaling",
+  /requestAnimationFrame\(function \(\) \{ scaleCard\(frame, preset\); \}\)/.test(previewSource));
+
+console.log("");
 console.log("the caption keeps its share of the frame on any comp width");
 // The host draws text at fontSize * compWidth/1920. A preview frame frameWidth
 // wide must therefore put the same share of its own width into that text.
