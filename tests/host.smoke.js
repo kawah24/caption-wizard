@@ -300,8 +300,23 @@ function fakeCreateComp(width, height, duration) {
           return {
             numProperties: 0,
             property: function () { return null; },
-            addProperty: function () {
-              return { property: function () { return { setValue: function () {} }; } };
+            addProperty: function (effectName) {
+              comp._effects.push(effectName);
+              var effectProps = {};
+              return {
+                matchName: effectName,
+                property: function (propName) {
+                  if (!effectProps[propName]) {
+                    effectProps[propName] = {
+                      setValue: function (value) {
+                        comp._glowProps[effectName + "." + propName] = value;
+                      }
+                    };
+                  }
+                  return effectProps[propName];
+                },
+                remove: function () {}
+              };
             }
           };
         }
@@ -342,6 +357,10 @@ function fakeCreateComp(width, height, duration) {
   comp.width = width;
   comp.height = height;
   comp.duration = duration;
+  comp._effects = [];
+  comp._glowProps = {};
+  comp.effectsAdded = function () { return comp._effects.slice(0); };
+  comp.glowProps = function () { return comp._glowProps; };
   Object.defineProperty(comp, "numLayers", { get: function () { return layers.length; } });
   comp.layer = function (index) { return layers[index - 1]; };
   comp.layers = { addText: function (text) { return add(text); } };
@@ -584,6 +603,51 @@ check("every style settles on its own Vertical setting", misplaced.length === 0,
   misplaced.slice(0, 4).join(" | "));
 check("all the presets were exercised", Object.keys(motionsSeen).length >= 10,
   Object.keys(motionsSeen).sort().join(", "));
+
+console.log("");
+console.log("glow: what the host actually asks After Effects for");
+
+var glowComp = fakeCreateComp(1080, 1920, 10);
+var glowSettings = baseStyle({
+  applyGlow: true, glowColor: "#1b2bff", glowAmount: 40, fontSize: 80, applyStroke: true, strokeWidth: 12
+});
+var glowResult = runCreate(glowComp, two, glowSettings, true);
+var glowProps = glowComp.glowProps();
+console.log("  effects requested : " + JSON.stringify(glowComp.effectsAdded().filter(function (e) { return e !== "ADBE Drop Shadow"; })));
+console.log("  Glow Threshold    : " + glowProps["ADBE Glo2.Glow Threshold"]);
+console.log("  Glow Radius       : " + glowProps["ADBE Glo2.Glow Radius"]);
+console.log("  Glow Intensity    : " + glowProps["ADBE Glo2.Glow Intensity"]);
+console.log("  layers with glow  : " + (glowComp.effectsAdded().filter(function (e) { return e === "ADBE Glo2"; }).length));
+console.log("  backdrop layers   : " + glowResult.backdrops);
+
+check("the glow effect is requested when the style asks for it",
+  glowComp.effectsAdded().indexOf("ADBE Glo2") >= 0, JSON.stringify(glowComp.effectsAdded()));
+check("a glow backdrop is created", glowResult.backdrops > 0, String(glowResult.backdrops));
+
+// The comp's halo has to reach as far as the preview's, or the panel promises a
+// glow that After Effects does not draw. Both use 0.20 + 0.80x the text size.
+var previewModule = { document: { createElement: function () { return {}; } } };
+previewModule.window = previewModule;
+vm.createContext(previewModule);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8"), previewModule);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8"), previewModule);
+var lcpPreview = previewModule.LcpPreviews;
+
+var glowFontPx = 80 * (1080 / 1920);
+var previewFar = lcpPreview.glowRadii(glowFontPx, 40).far;
+check("the comp's halo radius matches the preview's, within rounding",
+  Math.abs(glowProps["ADBE Glo2.Glow Radius"] - previewFar) <= 1,
+  "comp " + glowProps["ADBE Glo2.Glow Radius"] + "px vs preview " + previewFar + "px");
+check("the glow is bright enough to see",
+  glowProps["ADBE Glo2.Glow Intensity"] >= 1, String(glowProps["ADBE Glo2.Glow Intensity"]));
+check("the threshold is not so high that the text cannot bloom",
+  glowProps["ADBE Glo2.Glow Threshold"] <= 60, String(glowProps["ADBE Glo2.Glow Threshold"]));
+
+var brighterComp = fakeCreateComp(1080, 1920, 10);
+runCreate(brighterComp, two, baseStyle({ applyGlow: true, glowAmount: 100, fontSize: 80 }), true);
+check("a higher amount gives a wider halo",
+  brighterComp.glowProps()["ADBE Glo2.Glow Radius"] > glowProps["ADBE Glo2.Glow Radius"],
+  brighterComp.glowProps()["ADBE Glo2.Glow Radius"] + "px vs " + glowProps["ADBE Glo2.Glow Radius"] + "px");
 
 console.log("");
 if (failures) {

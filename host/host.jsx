@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.2.6"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.7"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.2.6";
+var LCP_VERSION = "1.2.7";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -635,9 +635,13 @@ function lcp_addShadow(layer, style) {
 /**
  * The Glow effect itself ("ADBE Glo2").
  *
- * Kept deliberately restrained: threshold 70 and a radius of a quarter of the
- * text size. An earlier threshold of 40 with a 0.6x radius produced such a large
- * white bloom that it swallowed the karaoke highlight entirely.
+ * The numbers here deliberately mirror the panel preview, which draws the halo as
+ * two blurred shadows at radii of 0.08 + 0.30x and 0.20 + 0.80x the rendered text
+ * size. An earlier set of values - threshold 70, a quarter of the text size, and
+ * intensity 0.6 - produced a halo so small and faint next to a 12px outline that
+ * the effect was invisible, while the preview showed a generous one. Threshold 60
+ * is After Effects' own default, and the intensity is built around its default of
+ * 1, so the effect behaves like a glow at its middle settings.
  */
 function lcp_applyGlowEffect(layer, style) {
   try {
@@ -655,13 +659,14 @@ function lcp_applyGlowEffect(layer, style) {
     lcp_logEffect("glow", "ok");
 
     var fontPx = lcp_num(style.fontSize, 72) * lcp_compScale(layer);
-    var intensity = (amount / 100) * 1.5;
+    var strength = amount / 100;
 
-    // The radius has to follow the slider too, not just the intensity: at a fixed
-    // radius the amount only changed how bright the halo was.
-    var radius = Math.max(3, Math.round(fontPx * (0.12 + 0.45 * (amount / 100))));
+    // Radius follows the same curve as the preview's outer halo, so the comp and
+    // the panel agree on how far the light reaches.
+    var radius = Math.max(4, Math.round(fontPx * (0.20 + 0.80 * strength)));
+    var intensity = 0.8 + 1.2 * strength;
 
-    try { glow.property("Glow Threshold").setValue(70); } catch (e1) { /* defaults */ }
+    try { glow.property("Glow Threshold").setValue(60); } catch (e1) { /* defaults */ }
     try { glow.property("Glow Radius").setValue(radius); } catch (e2) { /* defaults */ }
     try { glow.property("Glow Intensity").setValue(intensity); } catch (e3) { /* defaults */ }
 
