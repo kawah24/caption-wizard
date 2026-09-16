@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Enables loading this unsigned extension in CEP debug mode.
+  Copy this file next to CSXS/ so the panel loads without a ZXP signature.
+-->
+<ExtensionList>
+  <Extension Id="com.captionwizard.panel">
+    <HostList>
+      <Host Name="AEFT" Port="8092" />
+    </HostList>
+  </Extension>
+</ExtensionList>

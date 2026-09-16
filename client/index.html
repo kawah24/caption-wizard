@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Caption Wizard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <div id="cepBanner" class="banner" style="display:none">
+      This panel is not running inside After Effects, so Generate is disabled.
+      Open it from Window &gt; Extensions (Legacy) &gt; Caption Wizard.
+    </div>
+
+    <div class="tabs" id="tabBar">
+      <button class="tab active" data-tab="text" type="button">Text</button>
+      <button class="tab" data-tab="style" type="button">Style</button>
+      <button class="tab" data-tab="timing" type="button">Timing</button>
+      <button class="tab" data-tab="auto" type="button">Auto</button>
+    </div>
+
+    <section class="view" id="view-text">
+      <label class="field-label" for="transcriptInput">Transcript</label>
+      <textarea id="transcriptInput" spellcheck="false"
+        placeholder="One caption per line, or paste SRT with timecodes."></textarea>
+      <div class="row">
+        <button id="loadSrtBtn" class="btn" type="button">Load SRT...</button>
+        <button id="sampleBtn" class="btn" type="button">Sample</button>
+        <button id="clearTextBtn" class="btn" type="button">Clear text</button>
+      </div>
+      <input type="file" id="srtFile" accept=".srt,.vtt,.txt" style="display:none" />
+      <div class="stats" id="transcriptStats">No captions yet.</div>
+      <div class="hint" id="compInfo">Checking host...</div>
+    </section>
+
+    <section class="view" id="view-style" style="display:none">
+      <div class="two-col" id="styleLayout">
+        <div class="col-main">
+          <div class="grid-label">Preview</div>
+          <div id="stageContainer"></div>
+          <div class="stage-note" id="stageNote"></div>
+          <div class="grid-label">Style preset</div>
+          <div class="style-grid" id="styleGrid"></div>
+        </div>
+        <div class="col-side">
+          <div class="settings-head">
+            <span class="grid-label">Settings</span>
+            <button id="resetStyleBtn" class="btn" type="button"
+                    title="Restore this style's settings to their defaults">Reset</button>
+          </div>
+          <div id="settingsContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-timing" style="display:none">
+      <div class="two-col">
+        <div class="col-main">
+          <div class="grid-label">Timing</div>
+          <div id="timingContainer"></div>
+          <div class="hint">
+            Cues that already carry timecodes (SRT, or a local transcription) keep
+            them; only the offset is applied. Plain lines are laid out using the
+            reading speed, gap, and maximum words per caption.
+          </div>
+        </div>
+        <div class="col-side">
+          <div class="grid-label">How it resolves</div>
+          <div class="stats" id="timingSummary"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-auto" style="display:none">
+      <div class="grid-label">Auto caption (offline)</div>
+      <div class="hint">
+        Runs on this machine only: ffmpeg extracts the audio, faster-whisper
+        transcribes it. No account, no upload, no API key.
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span class="control-label">Python</span>
+          <span class="control-value" id="pythonState">checking...</span>
+        </div>
+        <input type="text" id="pythonPath" placeholder="auto-detected" />
+        <div class="row">
+          <button id="recheckPythonBtn" class="btn" type="button">Re-check</button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span class="control-label">Model</span>
+        </div>
+        <select id="modelSelect"></select>
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span class="control-label">Language</span>
+        </div>
+        <select id="languageSelect"></select>
+      </div>
+
+      <div class="control control-toggle">
+        <span class="control-label">Allow a one-time model download</span>
+        <input type="checkbox" id="allowDownload" />
+      </div>
+
+      <div class="control">
+        <div class="control-head">
+          <span class="control-label">Audio or video file</span>
+          <span class="control-value" id="mediaState"></span>
+        </div>
+        <input type="text" id="audioPath" placeholder="the active comp's video is used automatically" />
+        <div class="row">
+          <button id="useCompMediaBtn" class="btn primary" type="button">Use active comp video</button>
+        </div>
+        <div class="row">
+          <button id="chooseAudioBtn" class="btn" type="button">Choose a different file...</button>
+        </div>
+        <div class="control-hint" id="mediaHint"></div>
+      </div>
+
+      <div class="row">
+        <button id="transcribeBtn" class="btn primary" type="button">Transcribe</button>
+        <button id="cancelTranscribeBtn" class="btn danger" type="button" disabled>Cancel</button>
+      </div>
+
+      <div class="progress-outer">
+        <div class="progress-inner" id="autoProgressBar"></div>
+      </div>
+      <div class="status" id="autoStatus"></div>
+    </section>
+
+    <footer class="footer">
+      <div class="row">
+        <button id="generateBtn" class="btn primary" type="button">Generate Captions</button>
+      </div>
+      <div class="row">
+        <button id="refreshBtn" class="btn" type="button">Refresh</button>
+        <button id="clearGeneratedBtn" class="btn danger" type="button">Clear Generated</button>
+      </div>
+      <div class="status" id="status"></div>
+    </footer>
+
+  </div>
+
+  <script src="csinterface-lite.js"></script>
+  <script src="transcript.js"></script>
+  <script src="fonts.js"></script>
+  <script src="controls.js"></script>
+  <script src="presets.js"></script>
+  <script src="previews.js"></script>
+  <script src="transcribe-local.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

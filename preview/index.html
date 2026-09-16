@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Caption Wizard - browser preview</title>
+  <link rel="stylesheet" href="../client/style.css" />
+  <style>
+    /* Browser shell only. Everything inside the two panes is the panel's own
+       markup and stylesheet, so what you see here is what the panel renders. */
+    html, body { height: auto; }
+    .preview-head { max-width: 1180px; margin: 0 auto; padding: 22px 20px 0; }
+    .preview-head h1 { margin: 0 0 6px; font-size: 20px; color: var(--text); }
+    .preview-meta { font-size: 12px; color: var(--text-dim); line-height: 1.6; max-width: 900px; }
+    .preview-toolbar { display: flex; gap: 8px; margin: 14px 0 4px; }
+    .preview-toolbar .btn { flex: 0 0 auto; padding: 7px 16px; }
+    .preview-shell {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 10px 20px 40px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 18px;
+      align-items: start;
+    }
+    .preview-pane, .preview-side {
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+    }
+    .preview-side { background: var(--bg-soft); max-height: 88vh; overflow-y: auto; }
+    .style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .preview-pane .pv { height: 96px; }
+    @media (max-width: 900px) {
+      .preview-shell { grid-template-columns: minmax(0, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-head">
+    <h1>Caption Wizard &mdash; browser preview</h1>
+    <div class="preview-meta" id="meta">Loading...</div>
+    <div class="preview-toolbar">
+      <button id="refreshBtn" class="btn primary" type="button">Refresh</button>
+      <button id="reloadBtn" class="btn" type="button">Reload page</button>
+    </div>
+  </div>
+
+  <div class="preview-shell">
+
+    <div class="preview-pane">
+      <div class="grid-label">Preview</div>
+      <div id="stageContainer"></div>
+      <div class="stage-note" id="stageNote"></div>
+      <div class="grid-label">Styles (<span id="styleCount">0</span>)</div>
+      <div class="style-grid" id="styleGrid"></div>
+    </div>
+
+    <div class="preview-side">
+      <div class="grid-label">Settings</div>
+      <div id="settingsContainer"></div>
+    </div>
+
+  </div>
+
+  <script src="../client/transcript.js"></script>
+  <script src="../client/fonts.js"></script>
+  <script src="../client/controls.js"></script>
+  <script src="../client/presets.js"></script>
+  <script src="../client/previews.js"></script>
+  <script src="fonts.js"></script>
+  <script src="preview.js"></script>
+</body>
+</html>

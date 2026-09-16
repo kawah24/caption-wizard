@@ -1,0 +1,672 @@
+/* Caption Wizard - panel styling. Dark, compact, After Effects friendly. */
+
+:root {
+  --bg: #1e1e1e;
+  --bg-soft: #262626;
+  --bg-card: #2d2d2d;
+  --line: #3a3a3a;
+  --text: #d8d8d8;
+  --text-dim: #8f8f8f;
+  --accent: #4b9fff;
+  --accent-soft: #2b5f9e;
+  --danger: #d9534f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ---------- banner ---------- */
+
+.banner {
+  padding: 8px 10px;
+  background: #4a2f13;
+  color: #ffd9a3;
+  border-bottom: 1px solid #6b4318;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ---------- layout ---------- */
+
+/* One column by default, so the panel stays readable when docked narrow. With
+   room, the editor moves to a right-hand column - the same arrangement the
+   browser preview uses. Body gets .wide from main.js on resize; the media query
+   repeats it in case the panel resize event is ever missed. */
+.two-col {
+  display: block;
+}
+
+.col-side {
+  margin-top: 14px;
+}
+
+/* Settings header: label on the left, reset on the right. */
+.settings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.settings-head .grid-label { margin-bottom: 6px; }
+
+.settings-head .btn {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  font-size: 10px;
+}
+
+@media (min-width: 620px) {
+  .two-col {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: stretch;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* Each column scrolls on its own, so the preview stays put while you work
+     through a long settings list. */
+  .col-main,
+  .col-side {
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
+  }
+
+  .col-side {
+    margin-top: 0;
+    border-left: 1px solid var(--line);
+    padding-left: 16px;
+  }
+
+  .style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* The columns own the scrolling, so the tab itself must not scroll. */
+  #view-style,
+  #view-timing { overflow: hidden; }
+}
+
+body.wide .two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  height: 100%;
+  min-height: 0;
+}
+
+body.wide .col-main,
+body.wide .col-side {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+body.wide .col-side {
+  margin-top: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+
+body.wide .style-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+body.wide #view-style,
+body.wide #view-timing { overflow: hidden; }
+
+/* ---------- tabs ---------- */
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  flex: 0 0 auto;
+}
+
+.tab {
+  flex: 1 1 0;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  background: #2a2a2a;
+}
+
+/* ---------- views ---------- */
+
+.view {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.field-label,
+.grid-label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.grid-label { margin-top: 12px; }
+
+textarea {
+  width: 100%;
+  min-height: 190px;
+  resize: vertical;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  padding: 8px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+textarea:focus { outline: 1px solid var(--accent-soft); }
+
+.stats {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ---------- buttons ---------- */
+
+.row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn {
+  flex: 1 1 auto;
+  padding: 7px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: #333;
+  color: var(--text);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.btn:hover { background: #3d3d3d; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.btn.primary {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn.primary:hover { background: var(--accent); }
+.btn.danger { color: #ffb9b7; border-color: #6b3a38; }
+.btn.danger:hover { background: #4a2523; }
+
+/* ---------- style grid ---------- */
+
+.style-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.style-card {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.style-card:hover { border-color: #555; }
+.style-card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-soft); }
+
+.style-card-name {
+  padding: 5px 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.style-card.selected .style-card-name { color: var(--text); }
+
+/* ---------- previews ---------- */
+
+.pv {
+  position: relative;
+  height: 62px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  /* Neutral mid grey on every preview surface, cards included: a near-black
+     stage swallows a drop shadow, and a bright one washes out a glow. */
+  background: linear-gradient(160deg, #8e8e8e, #5e5e5e);
+}
+
+.pv-text {
+  display: inline-block;
+  padding-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+.pv-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.pv-none .pv-text { animation: lcpHold 2.6s ease-in-out infinite; }
+
+.pv-slide-up .pv-text { animation: lcpSlideUp 2.2s ease-out infinite; }
+.pv-slide-down .pv-text { animation: lcpSlideDown 2.2s ease-out infinite; }
+.pv-slide-left .pv-text { animation: lcpSlideLeft 2.2s ease-out infinite; }
+.pv-slide-right .pv-text { animation: lcpSlideRight 2.2s ease-out infinite; }
+.pv-pop-in .pv-text { animation: lcpPopIn 2.0s cubic-bezier(0.22, 1.4, 0.4, 1) infinite; }
+.pv-zoom-punch .pv-text { animation: lcpZoomPunch 2.0s cubic-bezier(0.2, 0.9, 0.2, 1) infinite; }
+.pv-blur-fade .pv-text { animation: lcpBlurFade 2.4s ease-in-out infinite; }
+.pv-cinematic .pv-text { animation: lcpCinematic 3.4s ease-in-out infinite; }
+.pv-flicker-out .pv-text { animation: lcpFlickerOut 2.6s steps(1, end) infinite; }
+.pv-pulse .pv-text { animation: lcpPulse 1.6s ease-in-out infinite; }
+.pv-word-punch .pv-text { animation: lcpWordPunch 1.2s steps(1, end) infinite; }
+.pv-neon .pv-text { animation: lcpNeon 2.2s ease-out infinite; }
+
+/* Karaoke animates each word separately; the delays are set per word in JS.
+   The marker class means a karaoke style highlights words whatever motion it
+   borrows - the comp does the same, since its karaoke path is independent of
+   the motion profile. */
+.pv-karaoke .pv-text { animation: lcpHold 2.6s ease-in-out infinite; }
+.pv-karaoke .pv-word,
+.pv-karaoke-words .pv-word {
+  display: inline-block;
+  animation-name: lcpKaraoke;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(1, end);
+}
+
+@keyframes lcpKaraoke {
+  0% { color: var(--lcp-karaoke-dim, #9a9a9a); transform: scale(1); }
+  8% { color: var(--lcp-karaoke-hi, #ffd400); transform: scale(1.12); }
+  26% { color: var(--lcp-karaoke-hi, #ffd400); transform: scale(1); }
+  34% { color: var(--lcp-karaoke-dim, #9a9a9a); transform: scale(1); }
+  100% { color: var(--lcp-karaoke-dim, #9a9a9a); transform: scale(1); }
+}
+
+@keyframes lcpSlideRight {
+  0% { opacity: 0; transform: translateX(-26px); }
+  18% { opacity: 1; transform: translateX(0); }
+  80% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(10px); }
+}
+
+@keyframes lcpZoomPunch {
+  0% { opacity: 0; transform: scale(1.55); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+@keyframes lcpCinematic {
+  0% { opacity: 0; transform: scale(1) translateY(4px); letter-spacing: 0.2em; }
+  25% { opacity: 1; transform: scale(1.02) translateY(0); letter-spacing: 0.2em; }
+  75% { opacity: 1; transform: scale(1.03) translateY(0); letter-spacing: 0.2em; }
+  100% { opacity: 0; transform: scale(1.05) translateY(-3px); letter-spacing: 0.2em; }
+}
+
+@keyframes lcpFlickerOut {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  70% { opacity: 1; }
+  74% { opacity: 0.15; }
+  78% { opacity: 1; }
+  82% { opacity: 0.1; }
+  86% { opacity: 1; }
+  90% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes lcpPulse {
+  0% { opacity: 0; transform: scale(1); }
+  15% { opacity: 1; transform: scale(1); }
+  32% { transform: scale(1.08); }
+  49% { transform: scale(1); }
+  66% { transform: scale(1.08); }
+  83% { transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes lcpHold {
+  0%, 100% { opacity: 1; }
+}
+
+@keyframes lcpSlideUp {
+  0% { opacity: 0; transform: translateY(18px); }
+  18% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes lcpSlideDown {
+  0% { opacity: 0; transform: translateY(-18px); }
+  18% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(6px); }
+}
+
+@keyframes lcpSlideLeft {
+  0% { opacity: 0; transform: translateX(26px); }
+  18% { opacity: 1; transform: translateX(0); }
+  80% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-10px); }
+}
+
+@keyframes lcpPopIn {
+  0% { opacity: 0; transform: scale(0.6); }
+  16% { opacity: 1; transform: scale(1.12); }
+  26% { transform: scale(1); }
+  78% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+
+@keyframes lcpBlurFade {
+  0% { opacity: 0; filter: blur(6px); transform: scale(1.06); }
+  22% { opacity: 1; filter: blur(0); transform: scale(1); }
+  78% { opacity: 1; filter: blur(0); transform: scale(1); }
+  100% { opacity: 0; filter: blur(5px); transform: scale(0.98); }
+}
+
+@keyframes lcpWordPunch {
+  0% { opacity: 0; transform: scale(0.92); }
+  6% { opacity: 1; transform: scale(1); }
+  92% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; }
+}
+
+@keyframes lcpNeon {
+  0% { opacity: 0; transform: scale(0.9); filter: brightness(2.2); }
+  20% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  80% { opacity: 1; transform: scale(1); filter: brightness(1); }
+  100% { opacity: 0; transform: scale(1.02); filter: brightness(1.6); }
+}
+
+/* ---------- controls ---------- */
+
+.control {
+  margin-bottom: 9px;
+}
+
+.control-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.control-label {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.control-value {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.control input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.control select,
+.control input[type="number"] {
+  width: 100%;
+  padding: 5px;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.control input[type="color"] {
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.control-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.control-toggle input { accent-color: var(--accent); }
+
+/* ---------- footer ---------- */
+
+.footer {
+  flex: 0 0 auto;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.status {
+  margin-top: 8px;
+  min-height: 15px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+}
+
+.status.error { color: #ff9b98; }
+.status.ok { color: #9ede9b; }
+.status.busy { color: #ffd9a3; }
+
+.hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ---------- live preview stage ---------- */
+
+/* Width and height are set in JS from the composition's own aspect ratio, so a
+   1080x1920 vertical comp previews as a vertical frame instead of 16:9. */
+.stage {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #4a4a4a;
+}
+
+.stage .pv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: block;
+  height: auto;
+}
+
+.stage .stage-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  max-width: 94%;
+  white-space: nowrap;
+}
+
+.stage .pv-text {
+  padding-bottom: 0;
+}
+
+/* One block per line when Lines per caption is 2 or 3. */
+.pv-line {
+  display: block;
+}
+
+.stage-note {
+  margin: 6px 0 2px;
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ---------- font picker ---------- */
+
+.font-filter {
+  width: 100%;
+  padding: 5px;
+  margin-bottom: 4px;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* Closed picker: the current family drawn in its own typeface. */
+.font-current {
+  width: 100%;
+  text-align: left;
+  padding: 7px 9px;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.3;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.font-current:hover { border-color: #555; }
+
+/* Open list: one row per family, each in its own face. */
+.font-list {
+  display: none;
+  max-height: 190px;
+  overflow-y: auto;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #101010;
+}
+
+.font-list.open { display: block; }
+
+.font-row {
+  padding: 5px 9px;
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.font-row:hover { background: #2b2b2b; }
+.font-row.selected { background: var(--accent-soft); color: #fff; }
+
+.font-empty {
+  padding: 8px 9px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.font-select {
+  width: 100%;
+  padding: 5px;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.control-hint {
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.control input[type="text"] {
+  width: 100%;
+  padding: 5px;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* ---------- progress ---------- */
+
+.progress-outer {
+  margin-top: 10px;
+  height: 6px;
+  width: 100%;
+  background: #141414;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-inner {
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+  transition: width 0.2s linear;
+}

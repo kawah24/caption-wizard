@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Caption Wizard - layout preview</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #d8d8d8;
+      font: 13px "Segoe UI", Arial, sans-serif;
+    }
+    header {
+      padding: 10px 14px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header strong { font-weight: 600; }
+    button {
+      background: #333;
+      color: #ddd;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 5px 11px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    button:hover { background: #3d3d3d; }
+    .note { color: #8f8f8f; font-size: 11px; margin-left: 4px; }
+    .stage { padding: 14px; }
+    iframe {
+      width: 380px;
+      height: 660px;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #1e1e1e;
+      transition: width 0.12s linear;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>The panel itself, at different widths</strong>
+    <button type="button" data-w="380">380 narrow</button>
+    <button type="button" data-w="619">619 just under</button>
+    <button type="button" data-w="620">620 breakpoint</button>
+    <button type="button" data-w="900">900 wide</button>
+    <button type="button" data-w="100%">fill</button>
+    <span class="note" id="note">
+      Below 620px everything stacks in one column; at 620px and above the editor moves to the right.
+    </span>
+  </header>
+
+  <div class="stage">
+    <iframe id="frame" src="../client/index.html" title="Caption Wizard"></iframe>
+  </div>
+
+  <script>
+    // This loads the real panel HTML, so what resizes here is the actual
+    // arrangement - not a mock-up of it. Without a CEP host the panel shows its
+    // "not inside After Effects" banner and falls back to the built-in font
+    // list, which does not affect the layout.
+    (function () {
+      var frame = document.getElementById("frame");
+      var note = document.getElementById("note");
+      var buttons = document.querySelectorAll("button");
+
+      function apply(width) {
+        frame.style.width = width;
+      }
+
+      for (var i = 0; i < buttons.length; i++) {
+        buttons[i].onclick = function () {
+          var value = this.getAttribute("data-w");
+          apply(value === "100%" ? "100%" : value + "px");
+          note.textContent = "width: " + value +
+            (value === "100%" ? "" : (parseInt(value, 10) >= 620
+              ? "  ->  two columns, editor on the right"
+              : "  ->  single column"));
+        };
+      }
+    })();
+  </script>
+</body>
+</html>

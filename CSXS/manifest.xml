@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Caption Wizard - CEP extension manifest.
+  Local-only caption tool for After Effects. No sign-in, no account,
+  no licence check, no network access.
+-->
+<ExtensionManifest Version="11.0"
+  ExtensionBundleId="com.captionwizard.panel"
+  ExtensionBundleVersion="1.1.0"
+  ExtensionBundleName="Caption Wizard">
+
+  <ExtensionList>
+    <Extension Id="com.captionwizard.panel" Version="1.1.0" />
+  </ExtensionList>
+
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="AEFT" Version="[22.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="11.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+
+  <DispatchInfoList>
+    <Extension Id="com.captionwizard.panel">
+      <DispatchInfo Host="AEFT">
+        <Resources>
+          <MainPath>./client/index.html</MainPath>
+          <ScriptPath>./host/host.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--allow-file-access-from-files</Parameter>
+            <!-- Node integration lets the panel launch the local, offline
+                 transcriber (tools/transcribe.py). No network is involved. -->
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Caption Wizard</Menu>
+          <Geometry>
+            <Size>
+              <Height>650</Height>
+              <Width>380</Width>
+            </Size>
+            <MinSize>
+              <Height>420</Height>
+              <Width>320</Width>
+            </MinSize>
+          </Geometry>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+
+</ExtensionManifest>

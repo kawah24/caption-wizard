@@ -1,0 +1,250 @@
+/**
+ * Smoke test for host/host.jsx
+ *
+ * The host script cannot run without After Effects, but its pure helpers can:
+ * this loads the real file into a VM and calls them directly. That covers the
+ * font enumeration shape (the API returns an Array of Arrays), the text case
+ * and line-break helpers, and the colour parser.
+ *
+ * Run from the extension root:   node tests/host.smoke.js
+ */
+var fs = require("fs");
+var path = require("path");
+var vm = require("vm");
+
+var hostPath = path.join(__dirname, "..", "host", "host.jsx");
+var sandbox = { app: null };
+vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync(hostPath, "utf8"), sandbox);
+
+var failures = 0;
+var checks = 0;
+
+function check(label, condition, detail) {
+  checks++;
+  if (!condition) {
+    failures++;
+    console.log("  FAIL  " + label + (detail === undefined ? "" : "  -> " + detail));
+  }
+}
+
+function eq(label, actual, expected) {
+  check(label, actual === expected, "got " + JSON.stringify(actual) + ", expected " + JSON.stringify(expected));
+}
+
+/** The enumeration caches, so each case starts from a clean slate. */
+function reset() {
+  sandbox._lcpFontFamilies = null;
+}
+
+function font(family, style, ps, substitute) {
+  return {
+    familyName: family,
+    styleName: style,
+    postScriptName: ps,
+    isSubstitute: !!substitute
+  };
+}
+
+console.log("host.jsx smoke test");
+console.log("");
+
+console.log("font enumeration: documented shape (Array of Arrays)");
+sandbox.app = {
+  fonts: {
+    allFonts: [
+      [font("Arial", "Regular", "ArialMT"), font("Arial", "Bold", "Arial-BoldMT")],
+      [font("Impact", "Regular", "Impact")]
+    ]
+  }
+};
+reset();
+var list = sandbox.lcp_enumerateFonts();
+check("returns a list", !!list && list.length === 2, list ? list.length : list);
+eq("sorted by family", list[0].family, "Arial");
+eq("bold PostScript name", list[0].boldPS, "Arial-BoldMT");
+eq("regular PostScript name", list[0].regularPS, "ArialMT");
+eq("single-style family serves both roles", list[1].regularPS, "Impact");
+eq("single-style family bold too", list[1].boldPS, "Impact");
+
+console.log("");
+console.log("font enumeration: defensive shapes");
+sandbox.app = { fonts: { allFonts: [font("Verdana", "Regular", "Verdana")] } };
+reset();
+var flat = sandbox.lcp_enumerateFonts();
+check("a flat array of Font objects still works", !!flat && flat.length === 1, flat ? flat.length : flat);
+eq("family read from a bare object", flat ? flat[0].family : null, "Verdana");
+
+sandbox.app = { fonts: { allFonts: [[font("Georgia", "Regular", "Georgia"), font("Georgia", "Italic", "Georgia-Italic")]] } };
+reset();
+var italicOnly = sandbox.lcp_enumerateFonts();
+eq("italics are not chosen as the bold face", italicOnly[0].boldPS, "Georgia");
+
+console.log("");
+console.log("font enumeration: awkward cases");
+sandbox.app = {
+  fonts: {
+    allFonts: [
+      [font("Roboto", "Light Italic", "Roboto-LightItalic")],
+      [font("Arial", "Regular", "ArialMT"), font("Arial", "Bold Italic", "Arial-BoldItalicMT")],
+      [font("Missing Font", "Regular", "MissingFont", true)]
+    ]
+  }
+};
+reset();
+var awkward = sandbox.lcp_enumerateFonts();
+var byFamily = {};
+for (var a = 0; a < awkward.length; a++) byFamily[awkward[a].family] = awkward[a];
+
+eq("substituted fonts are dropped", awkward.length, 2);
+check("odd-style family is kept", !!byFamily.Roboto);
+eq("odd-style family resolves to its only face",
+  byFamily.Roboto ? byFamily.Roboto.regularPS : null, "Roboto-LightItalic");
+eq("bold-italic is not used as the bold face",
+  byFamily.Arial ? byFamily.Arial.boldPS : null, "ArialMT");
+
+sandbox.app = { fonts: { allFonts: [] } };
+reset();
+eq("empty font environment returns null", sandbox.lcp_enumerateFonts(), null);
+sandbox.app = {};
+reset();
+eq("AE without a fonts object returns null", sandbox.lcp_enumerateFonts(), null);
+
+sandbox.app = { fonts: { allFonts: [[font("Arial", "Regular", "ArialMT")]] } };
+reset();
+var shape = sandbox.lcp_fontShape();
+check("shape probe describes the API", typeof shape === "string" && shape.indexOf("groups=1") >= 0, shape);
+
+console.log("");
+console.log("font resolution");
+reset();
+eq("known family + bold", sandbox.lcp_resolvePostScriptName("Arial", true), "ArialMT");
+eq("unknown family falls back to the built-in table", sandbox.lcp_resolvePostScriptName("No Such Font", false), "ArialMT");
+
+console.log("");
+console.log("text case");
+eq("uppercase", sandbox.lcp_applyCase("hello there", { transform: "uppercase" }), "HELLO THERE");
+eq("lowercase", sandbox.lcp_applyCase("Hello There", { transform: "lowercase" }), "hello there");
+eq("as typed", sandbox.lcp_applyCase("Hello There", { transform: "none" }), "Hello There");
+eq("missing setting is as typed", sandbox.lcp_applyCase("Hello", {}), "Hello");
+eq("null input is safe", sandbox.lcp_applyCase(null, { transform: "uppercase" }), "");
+
+console.log("");
+console.log("line breaks");
+eq("single line is untouched", sandbox.lcp_splitLines("one two three", "1"), "one two three");
+eq("two lines splits in half", sandbox.lcp_splitLines("one two three four", "2"), "one two\rthree four");
+eq("three lines over six words", sandbox.lcp_splitLines("a b c d e f", "3"), "a b\rc d\re f");
+eq("three lines over four words spreads 2/1/1", sandbox.lcp_splitLines("a b c d", "3"), "a b\rc\rd");
+eq("three lines over seven words spreads 3/2/2", sandbox.lcp_splitLines("a b c d e f g", "3"), "a b c\rd e\rf g");
+eq("more lines than words puts one word per line", sandbox.lcp_splitLines("a b", "3"), "a\rb");
+eq("single word is untouched", sandbox.lcp_splitLines("alone", "2"), "alone");
+eq("extra whitespace is normalised", sandbox.lcp_splitLines("a   b  c d", "2"), "a b\rc d");
+
+console.log("");
+console.log("colours");
+eq("white", JSON.stringify(sandbox.lcp_hexToRgb("#ffffff")), JSON.stringify([1, 1, 1]));
+eq("black", JSON.stringify(sandbox.lcp_hexToRgb("#000000")), JSON.stringify([0, 0, 0]));
+eq("red", JSON.stringify(sandbox.lcp_hexToRgb("#ff0000")), JSON.stringify([1, 0, 0]));
+eq("short form", JSON.stringify(sandbox.lcp_hexToRgb("#0f0")), JSON.stringify([0, 1, 0]));
+eq("junk falls back to white", JSON.stringify(sandbox.lcp_hexToRgb("not a colour")), JSON.stringify([1, 1, 1]));
+
+console.log("");
+console.log("auto caption source: which layer to transcribe");
+
+function FakeAVLayer(name, filePath, hasAudio, startTime) {
+  this.name = name;
+  this.hasAudio = !!hasAudio;
+  this.startTime = startTime || 0;
+  this.inPoint = 0;
+  this.outPoint = 10;
+  this.index = 1;
+  this.source = { file: { fsName: filePath, toString: function () { return filePath; } } };
+}
+function FakeLayerNoSource(name) {
+  this.name = name;
+  this.source = null;
+}
+
+var AVLayer = FakeAVLayer;
+sandbox.AVLayer = AVLayer;
+
+function fakeComp(layers, selectedIndexes) {
+  var selected = [];
+  for (var s = 0; s < (selectedIndexes || []).length; s++) {
+    selected.push(layers[selectedIndexes[s] - 1]);
+  }
+  return {
+    numLayers: layers.length,
+    selectedLayers: selected,
+    layer: function (i) { return layers[i - 1]; }
+  };
+}
+
+var videoWithAudio = new FakeAVLayer("video.mp4", "C:\\media\\video.mp4", true, 2.5);
+var silentVideo = new FakeAVLayer("silent.mov", "C:\\media\\silent.mov", false, 0);
+var noSource = new FakeLayerNoSource("shape layer");
+
+// No comp at all.
+eq("no comp -> nothing picked", sandbox.lcp_pickMediaLayer(null), null);
+
+// Nothing with a file.
+eq("a comp with no media picks nothing",
+  sandbox.lcp_pickMediaLayer(fakeComp([noSource])), null);
+
+eq("a non-AV layer is skipped",
+  sandbox.lcp_pickMediaLayer(fakeComp([noSource, silentVideo])) === silentVideo, true);
+
+// Prefers audio.
+var prefersAudio = sandbox.lcp_pickMediaLayer(fakeComp([silentVideo, videoWithAudio]));
+check("prefers a layer that has audio", prefersAudio === videoWithAudio,
+  prefersAudio ? prefersAudio.name : "null");
+
+// A selected layer wins when it has audio.
+var selectedWins = sandbox.lcp_pickMediaLayer(fakeComp([videoWithAudio, new FakeAVLayer("b.mp4", "C:\\b.mp4", true, 0)], [2]));
+check("a selected audio layer wins", selectedWins.name === "b.mp4", selectedWins.name);
+
+// A selected layer without audio does not win over the rest.
+var silentSelected = sandbox.lcp_pickMediaLayer(fakeComp([videoWithAudio, silentVideo], [2]));
+check("a selected silent layer falls back to audio", silentSelected === videoWithAudio,
+  silentSelected.name);
+
+// Falls back to the first file when nothing has audio.
+var noAudioAnywhere = sandbox.lcp_pickMediaLayer(fakeComp([silentVideo, new FakeAVLayer("c.mp4", "C:\\c.mp4", false, 0)]));
+check("falls back to the first file", noAudioAnywhere === silentVideo, noAudioAnywhere.name);
+
+console.log("");
+console.log("line breaking matches the panel preview");
+// The preview and the host must divide a caption identically, or what you judge
+// in the panel is not what lands in the comp.
+sandbox.window = sandbox;
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "transcript.js"), "utf8"), sandbox);
+var T = sandbox.LcpTranscript;
+
+var splitCases = ["one two three four", "Dolly Parton writes", "a b c d e f g", "a b", "alone", "one two three four five", ""];
+var splitLimits = [["1", "6"], ["2", "3"], ["3", "6"], ["3", "3"], ["3", "12"], ["3", ""]];
+for (var ci = 0; ci < splitCases.length; ci++) {
+  for (var li = 0; li < splitLimits.length; li++) {
+    var lines = splitLimits[li][0];
+    var max = splitLimits[li][1];
+    var hostLines = sandbox.lcp_splitLines(splitCases[ci], lines, max).split("\r");
+    var previewLines = T.splitIntoLines(splitCases[ci], lines, max);
+    check("same division for " + JSON.stringify(splitCases[ci]) + " at " + lines +
+      " line(s) / " + (max === "" ? "no limit" : max + " words"),
+      hostLines.join("|") === previewLines.join("|"),
+      hostLines.join("|") + "  vs  " + previewLines.join("|"));
+  }
+}
+
+console.log("");
+console.log("numbers");
+eq("parses numeric strings", sandbox.lcp_num("42", 7), 42);
+eq("uses the fallback for junk", sandbox.lcp_num("junk", 7), 7);
+eq("uses the fallback for undefined", sandbox.lcp_num(undefined, 7), 7);
+
+console.log("");
+if (failures) {
+  console.log(failures + " of " + checks + " checks FAILED");
+  process.exit(1);
+}
+console.log("all " + checks + " host checks passed");
+process.exit(0);
