@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.2.2"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.3"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.2.2";
+var LCP_VERSION = "1.2.3";
 var LCP_TAG = "LCP::created";
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
@@ -433,7 +433,8 @@ function lcp_animateKaraokeWord(layer, karaokeStyle, style, baseIn, baseOut, wor
   var wordEnd = Math.min(baseOut, lcp_num(word.endMs, baseOut * 1000) / 1000);
   if (wordEnd <= wordStart) wordEnd = Math.min(baseOut, wordStart + 0.05);
 
-  try { layer.property("Position").setValue([x, y]); } catch (e0) { /* ignore */ }
+  var offset = lcp_textOffset(layer, baseIn);
+  try { layer.property("Position").setValue([x, y - offset.y]); } catch (e0) { /* ignore */ }
 
   // Phrase fade in and out.
   var inDuration = Math.max(0, lcp_num(style.inDurMs, 200)) / 1000;
@@ -733,9 +734,11 @@ function lcp_addBox(comp, textLayer, style) {
 
   try { bar.property("Opacity").setValue(lcp_num(style.boxOpacity, 70)); } catch (e4) { /* ignore */ }
 
-  // sourceRectAtTime is relative to the text layer's anchor point.
+  // sourceRectAtTime is relative to the text layer's anchor point, and the text
+  // layer is itself positioned so its box is centred on the vertical position -
+  // so the bar's centre is that position exactly.
   var centreX = textX + rect.left + rect.width / 2;
-  var centreY = textY + rect.top + rect.height / 2;
+  var centreY = textY;
   try { bar.property("Position").setValue([centreX, centreY]); } catch (e5) { /* ignore */ }
   try { bar.moveAfter(textLayer); } catch (e6) { /* ignore */ }
 
@@ -1080,7 +1083,26 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
 }
 
 /**
- * Create a single text layer for one block of caption text.
+ * How far a text layer's own box sits from its anchor point.
+ *
+ * After Effects anchors a text layer at the text's origin - the first baseline -
+ * so using the requested position directly leaves the caption sitting above it.
+ * The panel preview centres the caption on the position, so the host has to
+ * offset by the measured box centre for the two to agree.
+ */
+function lcp_textOffset(layer, atTime) {
+  try {
+    var box = layer.sourceRectAtTime(atTime, false);
+    return {
+      x: lcp_num(box.left, 0),
+      y: lcp_num(box.top, 0) + lcp_num(box.height, 0) / 2
+    };
+  } catch (err) {
+    return { x: 0, y: 0 };
+  }
+}
+
+/** Create a single text layer for one block of caption text.
  *
  * Returns the layer count it took - the text layer, plus a glow backdrop when
  * the style asks for one - so callers can report what the comp really gained.
@@ -1104,6 +1126,10 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
   var baseX = lcp_num(style.posX, 50) / 100 * comp.width;
   var baseY = lcp_num(style.posY, 78) / 100 * comp.height;
 
+  // The caption's own box is centred on the vertical position, which is where the
+  // preview draws it - not the baseline.
+  var textY = baseY - lcp_textOffset(layer, inPoint).y;
+
   // Glow first: the backdrop is duplicated before the shadow is added, so it
   // cannot inherit a second copy of it.
   var glowBackdrop = lcp_addGlowBackdrop(comp, layer, style);
@@ -1114,9 +1140,9 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
   // holds its final text.
   if (allowBox && style.applyBox) lcp_addBox(comp, layer, style);
 
-  lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, baseY]);
+  lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, textY]);
   if (glowBackdrop) {
-    lcp_applyMotion(glowBackdrop, style, comp, glowBackdrop.inPoint, glowBackdrop.outPoint, [baseX, baseY]);
+    lcp_applyMotion(glowBackdrop, style, comp, glowBackdrop.inPoint, glowBackdrop.outPoint, [baseX, textY]);
   }
 
   return { text: 1, backdrops: glowBackdrop ? 1 : 0 };

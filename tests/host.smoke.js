@@ -322,7 +322,9 @@ function fakeCreateComp(width, height, duration) {
         if (at >= 0) layers.splice(at, 1);
       },
       sourceRectAtTime: function () {
-        return { width: String(text).length * 10, height: 40 };
+        // Models After Effects: the anchor is at the text's origin, so the box
+        // starts above it (top is negative) and is 40 tall.
+        return { left: 0, top: -30, width: String(text).length * 10, height: 40 };
       }
     };
     layers.push(layer);
@@ -463,6 +465,7 @@ function karaokePositions(align, posX) {
   var layers = comp.allLayers();
   return {
     xs: layers.map(function (l) { return l._positions[0][0]; }),
+    ys: layers.map(function (l) { return l._positions[0][1]; }),
     widths: layers.map(function (l) { return String(l.name).length * 10; }),
     leftJustified: layers.every(function (l) { return l._doc.justification === 1; })
   };
@@ -491,6 +494,20 @@ check("word order is preserved", centred.xs[0] < centred.xs[1] && centred.xs[1] 
 check("words keep their spacing on screen",
   Math.abs((centred.xs[1] - centred.xs[0]) - (centred.widths[0] + 10)) < 0.001,
   (centred.xs[1] - centred.xs[0]) + " for a word " + centred.widths[0] + " wide");
+
+// The fake reports a 40-tall box whose top is 30 above the anchor, so its centre
+// is 10 below the anchor. The layer has to move down by that much for the text's
+// box to sit on the requested position, which is where the preview draws it.
+check("karaoke words centre their own box on the vertical position",
+  centred.ys.every(function (y) { return Math.abs(y - (1920 * 0.78 + 10)) < 0.001; }),
+  centred.ys.join(", ") + " vs " + (1920 * 0.78 + 10));
+
+var settledComp = fakeCreateComp(1920, 1080, 10);
+runCreate(settledComp, two, baseStyle({ motion: "slideUp" }), true);
+var settledLayer = settledComp.allLayers()[0];
+var settled = settledLayer._positions[settledLayer._positions.length - 1];
+check("a plain caption settles with its box centred on the vertical position",
+  Math.abs(settled[1] - (1080 * 0.78 + 10)) < 0.001, settled[1] + " vs " + (1080 * 0.78 + 10));
 
 console.log("");
 if (failures) {

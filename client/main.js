@@ -23,6 +23,7 @@
     busy: false,
     asr: { cues: null, srt: "", language: null },   // cues produced by the local transcriber
     audio: { path: null, python: null, models: [], ready: false },
+    generatedFingerprint: null,   // settings the comp's layers were built from
     job: null
   };
 
@@ -475,6 +476,22 @@
   }
 
   /** Show what the preview is actually rendering, under the stage. */
+  /**
+   * What Generate would produce right now.
+   *
+   * Kept as a fingerprint so the panel can tell a comp that matches the preview
+   * from one built with older settings - the usual reason a generated caption
+   * looks out of place next to the preview.
+   */
+  function generationFingerprint() {
+    var plan = buildPlan();
+    return JSON.stringify({
+      style: currentSettings(),
+      timing: currentTiming(),
+      captions: plan.captions
+    });
+  }
+
   function updateFontStatus() {
     if (!el.stageNote) return;
     var preset = root.LcpPresets.getPreset(state.presetId);
@@ -501,6 +518,10 @@
     }
     if (settings.applyShadow || settings.applyGlow) {
       notes.push("shadow and glow are approximated in this preview");
+    }
+    if (state.generatedFingerprint && state.generatedFingerprint !== generationFingerprint()) {
+      notes.push("settings or text changed since you generated - press Generate Captions " +
+                 "to update the comp to this preview");
     }
     el.stageNote.textContent = notes.join("  -  ");
   }
@@ -584,6 +605,10 @@
       if (result.removed) {
         message = "Replaced " + result.removed + " previous layer(s). " + message;
       }
+      // Remember what these layers were built from, so the preview can say when it
+      // has moved on since. Read before the fingerprint changes shape.
+      state.generatedFingerprint = generationFingerprint();
+      updateFontStatus();
       if (result.warnings && result.warnings.length) {
         message += "\n" + result.warnings.join("\n");
       }

@@ -141,6 +141,19 @@ check("it never touches the chosen audio path", focusHandler.indexOf("useCompMed
 check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
+console.log("the panel can tell a stale comp from a fresh one");
+
+check("it records what the comp was built from",
+  /state\.generatedFingerprint = generationFingerprint\(\);/.test(js));
+check("it compares that with the settings showing now",
+  /state\.generatedFingerprint !== generationFingerprint\(\)/.test(js));
+check("it says so under the preview", /press Generate Captions/.test(js));
+check("it stays quiet before anything has been generated",
+  /state\.generatedFingerprint && state\.generatedFingerprint !==/.test(js));
+check("the fingerprint covers the style, the timing and the captions themselves",
+  /style: currentSettings\(\)/.test(js) && /timing: currentTiming\(\)/.test(js) && /captions: plan\.captions/.test(js));
+
+console.log("");
 console.log("styling for the markup");
 
 ["\\.footer", "\\.control-toggle", "\\.btn", "\\.status"].forEach(function (selector) {
