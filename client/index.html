@@ -136,12 +136,17 @@
     </section>
 
     <footer class="footer">
-      <div class="control control-toggle" title="Removes the layers this panel made in the active comp before creating new ones, so generating twice replaces instead of stacking. One Ctrl+Z undoes the whole thing.">
-        <span class="control-label">Replace previous captions</span>
-        <input type="checkbox" id="replacePrevious" checked />
-      </div>
-      <div class="row">
-        <button id="generateBtn" class="btn primary" type="button">Generate Captions</button>
+      <!-- Shown only while the Style tab is open: generating is the last step of
+           choosing a style. Refresh, Clear Generated and the status line stay
+           visible on every tab, because transcribing reports through the same line. -->
+      <div id="generateArea" style="display:none">
+        <div class="control control-toggle" title="Removes the layers this panel made in the active comp before creating new ones, so generating twice replaces instead of stacking. One Ctrl+Z undoes the whole thing.">
+          <span class="control-label">Replace previous captions</span>
+          <input type="checkbox" id="replacePrevious" checked />
+        </div>
+        <div class="row">
+          <button id="generateBtn" class="btn primary" type="button">Generate Captions</button>
+        </div>
       </div>
       <div class="row">
         <button id="refreshBtn" class="btn" type="button">Refresh</button>

@@ -959,6 +959,13 @@
     el.viewStyle.style.display = tabId === "style" ? "block" : "none";
     el.viewTiming.style.display = tabId === "timing" ? "block" : "none";
     el.viewAuto.style.display = tabId === "auto" ? "block" : "none";
+
+    // Generate belongs to the style: it applies the style you picked. The rest of
+    // the footer stays visible everywhere, so a transcribe message or an error is
+    // never hidden by which tab happens to be open.
+    if (el.generateArea) {
+      el.generateArea.style.display = tabId === "style" ? "block" : "none";
+    }
   }
 
   function collectElements() {
@@ -980,6 +987,7 @@
     el.generateBtn = byId("generateBtn");
     el.refreshBtn = byId("refreshBtn");
     el.clearGeneratedBtn = byId("clearGeneratedBtn");
+    el.generateArea = byId("generateArea");
     el.replacePrevious = byId("replacePrevious");
     el.status = byId("status");
     el.cepBanner = byId("cepBanner");

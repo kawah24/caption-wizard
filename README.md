@@ -49,7 +49,7 @@ defaults write com.adobe.CSXS.11 PlayerDebugMode 1
 **Text tab** - one caption per line, or paste/load an SRT to keep your own
 timecodes. `Load SRT...` reads the file locally; nothing is uploaded.
 
-**Style tab** - pick one of the nineteen built-in presets and tune it. The panel
+**Style tab** - pick one of the twenty built-in presets and tune it. The panel
 opens on **Karaoke** with **Anton** at 84px, uppercase, pink highlight on white,
 bolding off, 3 words per caption - the shipping look, and any of it can be changed
 and is then remembered per preset.
@@ -172,11 +172,12 @@ and vertical position are percentages of the comp, so they already adapt.
 **Buttons**
 
 - `Generate Captions` - creates the text layers in the active comp inside a
-  single undo group. With **Replace previous captions** ticked (the default) it
-  first removes the layers this panel previously made, so generating twice
-  rebuilds the captions instead of stacking a second set on top. The clear and
-  the rebuild share one undo group, so a single Ctrl+Z brings the old captions
-  back.
+  single undo group, and is shown on the **Style** tab only, because that is
+  where the look is chosen; its status line stays visible on every tab. With
+  **Replace previous captions** ticked (the default) it first removes the layers
+  this panel previously made, so generating twice rebuilds the captions instead
+  of stacking a second set on top. The clear and the rebuild share one undo
+  group, so a single Ctrl+Z brings the old captions back.
 - `Clear Generated` - removes **only** the layers this panel created. Every
   layer is tagged `LCP::created` in its comment, and only tagged layers are ever
   deleted.
@@ -397,7 +398,8 @@ resolves fonts by PostScript name.
 | `tests/fonts.smoke.js` | Font list handling, including whether a family really has a bold face |
 | `tests/previews.smoke.js` | PostScript-name to CSS-family mapping, which decides whether the preview shows the font you picked |
 | `tests/presets.smoke.js` | Pins the style contract the host script depends on |
-| `tests/host.smoke.js` | Host helpers: font enumeration, case, line breaks, colours, and which layer Auto Caption should transcribe |
+| `tests/host.smoke.js` | Host helpers: font enumeration, case, line breaks, colours, which layer Auto Caption should transcribe, and the layer counts Generate creates (including the glow backdrops) |
+| `tests/panel.smoke.js` | Panel markup and wiring: every element main.js looks up exists, each tab has a section, and the footer controls that must survive a tab switch are outside the part that hides |
 | `tests/consistency.js` | Checks every preset's motion exists in the host script, has a preview class, and has CSS |
 | `install.ps1` | Windows install helper |
 
