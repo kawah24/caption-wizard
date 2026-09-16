@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.2.4"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.2.5"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,8 +17,17 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.2.4";
+var LCP_VERSION = "1.2.5";
 var LCP_TAG = "LCP::created";
+
+/**
+ * What the first text layer of the last generate actually got.
+ *
+ * Positions depend on where After Effects anchors text, which cannot be checked
+ * from outside the app: reporting the numbers back lets the panel show what it
+ * really did instead of what it intended.
+ */
+var _lcpLastPlacement = null;
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -899,8 +908,24 @@ function lcp_compInfo() {
     ',"height":' + comp.height +
     ',"duration":' + lcp_num(comp.duration, 0) +
     ',"frameRate":' + lcp_num(frameRate, 0) +
-    ',"layers":' + comp.numLayers
+    ',"layers":' + comp.numLayers +
+    ',"generated":' + lcp_countTagged(comp)
   );
+}
+
+/** How many layers in this comp were made by this panel. */
+function lcp_countTagged(comp) {
+  var count = 0;
+  if (!comp) return count;
+  for (var i = 1; i <= comp.numLayers; i++) {
+    var layer = null;
+    try { layer = comp.layer(i); } catch (err) { layer = null; }
+    if (!layer) continue;
+    var comment = "";
+    try { comment = layer.comment ? String(layer.comment) : ""; } catch (err2) { comment = ""; }
+    if (comment.indexOf(LCP_TAG) === 0) count++;
+  }
+  return count;
 }
 
 /**
@@ -1128,7 +1153,18 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
 
   // The caption's own box is centred on the vertical position, which is where the
   // preview draws it - not the baseline.
-  var textY = baseY - lcp_textOffset(layer, inPoint).y;
+  var offset = lcp_textOffset(layer, inPoint);
+  var textY = baseY - offset.y;
+
+  if (!_lcpLastPlacement) {
+    _lcpLastPlacement = {
+      posY: lcp_num(style.posY, 78),
+      compHeight: comp.height,
+      anchorY: baseY,
+      textOffsetY: offset.y,
+      layerY: textY
+    };
+  }
 
   // Glow first: the backdrop is duplicated before the shadow is added, so it
   // cannot inherit a second copy of it.
@@ -1187,6 +1223,7 @@ function lcp_create(payloadJson) {
   var j;
 
   _lcpEffectLog = {};
+  _lcpLastPlacement = null;
 
   app.beginUndoGroup("Caption Wizard: Generate Captions");
   try {
@@ -1255,12 +1292,23 @@ function lcp_create(payloadJson) {
   }
   _lcpEffectLog = null;
 
+  var placement = "";
+  if (_lcpLastPlacement) {
+    var p = _lcpLastPlacement;
+    placement = ',"placement":{"posY":' + p.posY +
+      ',"compHeight":' + p.compHeight +
+      ',"anchorY":' + p.anchorY +
+      ',"textOffsetY":' + p.textOffsetY +
+      ',"layerY":' + p.layerY +
+      ',"fraction":' + (p.compHeight > 0 ? (p.anchorY / p.compHeight) : 0) + "}";
+  }
+
   // "created" stays the total layer count; text and backdrops break it down, so
   // the panel can say where the layers went instead of implying they are all
   // captions.
   return '{"ok":true,"created":' + (created + backdrops) +
          ',"text":' + created + ',"backdrops":' + backdrops +
-         ',"removed":' + removed +
+         ',"removed":' + removed + placement +
          ',"errors":' + lcp_jsonStringArray(errors) +
          ',"warnings":' + lcp_jsonStringArray(warnings) + "}";
 }

@@ -534,7 +534,8 @@
     if (!info || info.ok === false) return "No active composition.";
     return "Comp: " + info.name + "  " + info.width + "x" + info.height +
            "  " + info.frameRate + " fps  " + info.duration.toFixed(2) + "s  " +
-           info.layers + " layer(s)";
+           info.layers + " layer(s)" +
+           (info.generated ? "  " + info.generated + " from this panel" : "");
   }
 
   function refreshCompInfo() {
@@ -609,6 +610,18 @@
       // has moved on since. Read before the fingerprint changes shape.
       state.generatedFingerprint = generationFingerprint();
       updateFontStatus();
+      // Report the placement the host actually used. Positions depend on where
+      // After Effects anchors text, so showing the numbers beats assuming it.
+      if (result.placement) {
+        var place = result.placement;
+        message += "\nPlaced at " + Math.round(place.fraction * 100) + "% of the comp height (" +
+                   Math.round(place.anchorY) + " px of " + place.compHeight +
+                   ", text offset " + Math.round(place.textOffsetY) + " px)";
+        if (place.compHeight > 0 && Math.abs(place.fraction - (place.posY / 100)) > 0.01) {
+          message += " - does not match the Vertical setting";
+        }
+        message += ".";
+      }
       if (result.warnings && result.warnings.length) {
         message += "\n" + result.warnings.join("\n");
       }

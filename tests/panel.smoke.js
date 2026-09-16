@@ -141,6 +141,16 @@ check("it never touches the chosen audio path", focusHandler.indexOf("useCompMed
 check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
+console.log("the panel reports what the host actually did");
+
+check("the generate message says where the caption was placed",
+  /Placed at " \+ Math\.round\(place\.fraction \* 100\)/.test(js));
+check("it warns when that disagrees with the Vertical setting",
+  /does not match the Vertical setting/.test(js));
+check("the comp line counts the layers this panel put there",
+  /info\.generated/.test(js) && /from this panel/.test(js));
+
+console.log("");
 console.log("the panel can tell a stale comp from a fresh one");
 
 check("it records what the comp was built from",

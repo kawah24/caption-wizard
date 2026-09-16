@@ -510,6 +510,33 @@ check("a plain caption settles with its box centred on the vertical position",
   Math.abs(settled[1] - (1080 * 0.78 + 10)) < 0.001, settled[1] + " vs " + (1080 * 0.78 + 10));
 
 console.log("");
+console.log("the host reports where it actually put the caption");
+
+var placedComp = fakeCreateComp(1920, 1080, 10);
+var placed = runCreate(placedComp, two, baseStyle({}), true);
+check("the result carries a placement", !!placed.placement);
+check("the placement matches the Vertical setting",
+  Math.abs(placed.placement.fraction - 0.78) < 1e-6, String(placed.placement.fraction));
+check("it reports the text offset it applied",
+  Math.abs(placed.placement.textOffsetY - (-10)) < 0.001, String(placed.placement.textOffsetY));
+check("the layer position is that offset away from the requested position",
+  Math.abs(placed.placement.layerY - (1080 * 0.78 + 10)) < 0.001, String(placed.placement.layerY));
+check("the reported comp height is the comp's own",
+  placed.placement.compHeight === 1080, String(placed.placement.compHeight));
+
+sandbox.app = {
+  project: { activeItem: placedComp },
+  beginUndoGroup: function () {},
+  endUndoGroup: function () {},
+  fonts: { allFonts: [] }
+};
+var compInfo = JSON.parse(sandbox.lcp_compInfo());
+check("the comp info counts the layers this panel made",
+  compInfo.generated === placedComp.numLayers, compInfo.generated + " vs " + placedComp.numLayers);
+check("and still reports the comp's total layer count",
+  compInfo.layers === placedComp.numLayers, String(compInfo.layers));
+
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
