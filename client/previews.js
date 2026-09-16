@@ -644,6 +644,17 @@
     sizeStage(stage, compWidth, compHeight, opts.maxHeight);
     applyStageSettings(stage, preset, settings, { compWidth: compWidth, compHeight: compHeight });
 
+    // The stage is still detached here, so it has no width yet: that first pass
+    // measured the text against the fallback frame width. Re-fit and re-apply once
+    // the caller has put it in the document, otherwise the panel opens showing the
+    // wrong text size and only corrects itself when something else re-fits.
+    if (root.requestAnimationFrame) {
+      root.requestAnimationFrame(function () {
+        sizeStage(stage, compWidth, compHeight, opts.maxHeight);
+        applyStageSettings(stage, preset, settings, { compWidth: compWidth, compHeight: compHeight });
+      });
+    }
+
     if (!opts.disableMedia) attachMedia(frame, preset.id, 0);
     return stage;
   }

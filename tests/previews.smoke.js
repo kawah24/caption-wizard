@@ -90,6 +90,18 @@ check("returns a spaced name", unknown === "Zapf Dingbats ITC", unknown);
 eq("empty input is safe", P.familyForPostScript(""), "Arial");
 eq("null input is safe", P.familyForPostScript(null), "Arial");
 
+check("the live stage re-applies its scale once it has been laid out",
+  /requestAnimationFrame/.test(stageSource) &&
+  /requestAnimationFrame\(function \(\) \{\s*\n\s*sizeStage\(stage, compWidth, compHeight, opts\.maxHeight\);/.test(stageSource));
+check("buildStage measures twice: once detached, once after layout",
+  (stageSource.match(/applyStageSettings\(/g) || []).length === 2,
+  (stageSource.match(/applyStageSettings\(/g) || []).length + " call(s)");
+check("both passes re-fit the frame",
+  (stageSource.match(/sizeStage\(/g) || []).length === 2,
+  (stageSource.match(/sizeStage\(/g) || []).length + " call(s)");
+check("the second pass reuses the same settings",
+  (stageSource.match(/applyStageSettings\(stage, preset, settings, \{ compWidth: compWidth, compHeight: compHeight \}\);/g) || []).length === 2);
+
 console.log("");
 console.log("caption placement, shared by the stage and the cards");
 
@@ -110,6 +122,7 @@ check("no settings at all does not throw",
   P.captionPlacement(null).align === "center");
 
 var previewSource = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
+var stageSource = previewSource.slice(previewSource.indexOf("function buildStage"), previewSource.indexOf("function applyStageSettings"));
 check("the live stage places captions with it",
   /captionPlacement\(settings\)/.test(previewSource) &&
   /anchor\.style\.transform = spot\.transform/.test(previewSource));
