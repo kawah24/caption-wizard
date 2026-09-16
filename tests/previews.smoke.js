@@ -90,6 +90,12 @@ check("returns a spaced name", unknown === "Zapf Dingbats ITC", unknown);
 eq("empty input is safe", P.familyForPostScript(""), "Arial");
 eq("null input is safe", P.familyForPostScript(null), "Arial");
 
+console.log("");
+console.log("the live stage measures itself after layout, not before");
+
+var previewSource = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
+var stageSource = previewSource.slice(previewSource.indexOf("function buildStage"), previewSource.indexOf("function applyStageSettings"));
+
 check("the live stage re-applies its scale once it has been laid out",
   /requestAnimationFrame/.test(stageSource) &&
   /requestAnimationFrame\(function \(\) \{\s*\n\s*sizeStage\(stage, compWidth, compHeight, opts\.maxHeight\);/.test(stageSource));
@@ -121,8 +127,6 @@ check("missing values use the shipped defaults",
 check("no settings at all does not throw",
   P.captionPlacement(null).align === "center");
 
-var previewSource = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
-var stageSource = previewSource.slice(previewSource.indexOf("function buildStage"), previewSource.indexOf("function applyStageSettings"));
 check("the live stage places captions with it",
   /captionPlacement\(settings\)/.test(previewSource) &&
   /anchor\.style\.transform = spot\.transform/.test(previewSource));
