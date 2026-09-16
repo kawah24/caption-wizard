@@ -149,15 +149,18 @@ check("no settings at all does not throw",
 check("the live stage places captions with it",
   /captionPlacement\(settings\)/.test(source) &&
   /anchor\.style\.transform = spot\.transform/.test(source));
-check("the style cards place captions with it too",
-  /label\.style\.transform = spot\.transform/.test(source));
+check("the cards are centred by the stylesheet, not by script",
+  !/label\.style\.(position|left|top|transform)\s*=/.test(source));
+check("the stylesheet centres a card's caption",
+  /align-items: center;[\s\S]{0,140}justify-content: center;/.test(
+    fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8")));
 check("a card keeps the stylesheet's readable size",
-  !/function scaleCard[\s\S]{0,700}applyTextStyle/.test(source),
+  !/function applyCardStyle[\s\S]{0,700}applyTextStyle/.test(source),
   "cards are a picker, so they do not scale type with the comp");
-check("a card's position comes from its own preset",
-  /presetSettings\(preset\)/.test(source));
+check("a card shows its preset's glow",
+  /glowShadow\(CARD_TEXT_PX, settings\)/.test(source));
 check("the cards wait for layout before scaling",
-  /requestAnimationFrame\(function \(\) \{ scaleCard\(frame, preset\); \}\)/.test(source));
+  /requestAnimationFrame\(function \(\) \{ applyCardStyle\(frame, preset\); \}\)/.test(source));
 
 console.log("");
 console.log("the caption keeps its share of the frame on any comp width");

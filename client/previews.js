@@ -536,35 +536,27 @@
   var CARD_TEXT_PX = 13;
 
   /**
-   * Place a card's caption where its style puts it, and show its glow.
+   * Apply the parts of a style a card can show without breaking the picker.
    *
-   * Deliberately does not touch the type size. At a card's width the honest
-   * scale works out around 8-9px, which is too small to read: a card is a picker,
-   * not a proof, so the stylesheet keeps every card legible at one size. The glow
-   * is the exception - a neon style with no halo in its card reads as a style that
-   * has no glow at all.
+   * Every card's caption is centred by the stylesheet at one legible size: the
+   * grid is a picker, not a proof. Scaling type against a card's width worked out
+   * around 8-9px, and following each style's own position spread the captions
+   * around the cards so they could not be compared.
+   *
+   * The glow is the exception. A neon style with no halo in its card reads as a
+   * style that has no glow at all.
    */
-  function scaleCard(frame, preset) {
+  function applyCardStyle(frame, preset) {
     if (!frame) return;
 
     var label = frame.getElementsByClassName("pv-text")[0];
     if (!label) return;
-
-    if (!frame.clientWidth) return;
 
     var settings = presetSettings(preset);
     if (!settings) return;
 
     var glow = glowShadow(CARD_TEXT_PX, settings);
     if (glow) label.style.textShadow = glow;
-
-    var spot = captionPlacement(settings);
-    label.style.position = "absolute";
-    label.style.paddingBottom = "0";
-    label.style.left = spot.left;
-    label.style.top = spot.top;
-    label.style.transform = spot.transform;
-    label.style.textAlign = spot.align;
   }
 
   /** One clickable style card. */
@@ -590,7 +582,7 @@
     // the grid, so it lands on the next frame. Until then the label keeps its
     // stylesheet size rather than flashing at the wrong one.
     if (root.requestAnimationFrame) {
-      root.requestAnimationFrame(function () { scaleCard(frame, preset); });
+      root.requestAnimationFrame(function () { applyCardStyle(frame, preset); });
     }
 
     if (typeof options.onSelect === "function") {
@@ -766,7 +758,7 @@
     sizeFactor: sizeFactor,
     captionPlacement: captionPlacement,
     presetSettings: presetSettings,
-    scaleCard: scaleCard,
+    applyCardStyle: applyCardStyle,
     FALLBACK_FRAME_WIDTH: FALLBACK_FRAME_WIDTH,
     withKaraokeMarker: withKaraokeMarker,
     glowRadii: glowRadii,

@@ -269,7 +269,7 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   position: relative;
   height: 62px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   overflow: hidden;
   /* Neutral mid grey on every preview surface, cards included: a near-black
@@ -279,7 +279,8 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
 
 .pv-text {
   display: inline-block;
-  padding-bottom: 12px;
+  /* Cards centre their caption, so the old lift off the bottom is gone. */
+  padding-bottom: 0;
   font-size: 13px;
   font-weight: 700;
   color: #fff;
