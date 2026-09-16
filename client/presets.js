@@ -165,13 +165,14 @@
     {
       id: "neon",
       name: "Neon Outline",
-      blurb: "Bright fill with a heavy coloured outline.",
+      blurb: "Bright fill with a heavy coloured outline and a halo.",
       motion: "neon",
       previewLine: "Neon glow",
       controls: PLAIN_CONTROLS,
       defaults: {
         fontSize: 80, fill: "#8ef7ff", strokeColor: "#1b2bff", strokeWidth: 12,
-        transform: "uppercase", inDurMs: 300, outDurMs: 220
+        transform: "uppercase", applyGlow: true, glowColor: "#1b2bff", glowAmount: 40,
+        inDurMs: 300, outDurMs: 220
       }
     },
     {

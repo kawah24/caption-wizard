@@ -247,17 +247,36 @@
   /**
    * Glow halo radii for a rendered font size and a 0-100 amount.
    *
-   * The floors are deliberately tiny. They used to be 4px and 9px, which at the
-   * ~13px a vertical comp preview renders at were larger than the scaled values
-   * themselves - so the radii were pinned and the amount slider did nothing.
+   * The floors are not zero, and not tiny: on a portrait comp the live stage draws
+   * text at around 7px, where a proportional halo works out under a pixel - so a
+   * glow that is plainly there in the comp looked absent in the panel. The stage
+   * note already says the glow is approximated here, so the floor keeps it visible
+   * rather than pretending the light is not there.
    */
   function glowRadii(renderedSize, amount) {
     var strength = (amount === undefined ? 40 : amount) / 100;
     var size = Math.max(1, renderedSize || 1);
     return {
-      near: Math.max(1, Math.round(size * (0.08 + 0.30 * strength))),
-      far: Math.max(2, Math.round(size * (0.20 + 0.80 * strength)))
+      near: Math.max(2, Math.round(size * (0.08 + 0.30 * strength))),
+      far: Math.max(5, Math.round(size * (0.20 + 0.80 * strength)))
     };
+  }
+
+  /**
+   * The glow as a text-shadow value, or "" when the style has none.
+   *
+   * Shared by the stage and the style cards so a neon style looks like one
+   * wherever it appears, and it keeps the two in step with the host, which uses
+   * the same 0.20 + 0.80x curve for After Effects' Glow radius.
+   */
+  function glowShadow(renderedSize, settings) {
+    if (!settings || !settings.applyGlow) return "";
+    var amount = (settings.glowAmount === undefined) ? 40 : settings.glowAmount;
+    if (!(amount > 0)) return "";
+
+    var colour = settings.glowColor || settings.fill || "#ffffff";
+    var glow = glowRadii(renderedSize, amount);
+    return "0 0 " + glow.near + "px " + colour + ", 0 0 " + glow.far + "px " + colour;
   }
 
   /**
@@ -407,13 +426,8 @@
       effects.push(Math.round(offset * 0.7) + "px " + offset + "px " + blur + "px " +
         rgba(settings.shadowColor || "#000000", shadowAlpha));
     }
-    if (settings.applyGlow && (settings.glowAmount === undefined ? 40 : settings.glowAmount) > 0) {
-      // Tinted, and sized from the rendered text so it stays in proportion.
-      var glowColor = settings.glowColor || settings.fill || "#ffffff";
-      var glow = glowRadii(renderedSize, settings.glowAmount);
-      effects.push("0 0 " + glow.near + "px " + glowColor);
-      effects.push("0 0 " + glow.far + "px " + glowColor);
-    }
+    var glow = glowShadow(renderedSize, settings);
+    if (glow) effects.push(glow);
     label.style.textShadow = effects.join(", ");
 
     applyLineBreaks(label, settings);
@@ -518,14 +532,17 @@
     }
   }
 
+  /** The type size the stylesheet gives a card's caption. */
+  var CARD_TEXT_PX = 13;
+
   /**
-   * Place a card's caption where its style puts it.
+   * Place a card's caption where its style puts it, and show its glow.
    *
    * Deliberately does not touch the type size. At a card's width the honest
    * scale works out around 8-9px, which is too small to read: a card is a picker,
-   * not a proof, so the stylesheet keeps every card legible at one size. The
-   * position still follows the style, so a style that sits low in the comp does
-   * sit low in its card.
+   * not a proof, so the stylesheet keeps every card legible at one size. The glow
+   * is the exception - a neon style with no halo in its card reads as a style that
+   * has no glow at all.
    */
   function scaleCard(frame, preset) {
     if (!frame) return;
@@ -537,6 +554,9 @@
 
     var settings = presetSettings(preset);
     if (!settings) return;
+
+    var glow = glowShadow(CARD_TEXT_PX, settings);
+    if (glow) label.style.textShadow = glow;
 
     var spot = captionPlacement(settings);
     label.style.position = "absolute";
@@ -750,6 +770,7 @@
     FALLBACK_FRAME_WIDTH: FALLBACK_FRAME_WIDTH,
     withKaraokeMarker: withKaraokeMarker,
     glowRadii: glowRadii,
+    glowShadow: glowShadow,
     applyLineBreaks: applyLineBreaks,
     normalizeName: normalizeName,
     camelSplit: camelSplit,

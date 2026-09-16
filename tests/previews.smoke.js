@@ -13,6 +13,7 @@ var vm = require("vm");
 
 var source = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
 var fontsSource = fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8");
+var stageSource = source.slice(source.indexOf("function buildStage"), source.indexOf("function applyStageSettings"));
 
 // The real font list, as After Effects would report it. Notably without Anton,
 // so the fallback can be exercised.
@@ -91,10 +92,28 @@ eq("empty input is safe", P.familyForPostScript(""), "Arial");
 eq("null input is safe", P.familyForPostScript(null), "Arial");
 
 console.log("");
-console.log("the live stage measures itself after layout, not before");
+console.log("glow is shared, and visible at preview sizes");
 
-var previewSource = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
-var stageSource = previewSource.slice(previewSource.indexOf("function buildStage"), previewSource.indexOf("function applyStageSettings"));
+check("no glow setting means no shadow",
+  P.glowShadow(13, { applyGlow: false }) === "" && P.glowShadow(13, {}) === "");
+check("a zero amount means no shadow",
+  P.glowShadow(13, { applyGlow: true, glowAmount: 0 }) === "", P.glowShadow(13, { applyGlow: true, glowAmount: 0 }));
+check("the halo carries the style's own colour",
+  P.glowShadow(13, { applyGlow: true, glowAmount: 40, glowColor: "#1b2bff" }).indexOf("#1b2bff") >= 0,
+  P.glowShadow(13, { applyGlow: true, glowAmount: 40, glowColor: "#1b2bff" }));
+check("the halo is two shadows, near and far",
+  (P.glowShadow(13, { applyGlow: true, glowAmount: 40, glowColor: "#fff" }).match(/0 0 /g) || []).length === 2);
+check("a glow with no colour falls back to the fill",
+  P.glowShadow(13, { applyGlow: true, glowAmount: 40, fill: "#8ef7ff" }).indexOf("#8ef7ff") >= 0);
+check("the halo is wide enough to see at a 7px preview size",
+  P.glowShadow(7, { applyGlow: true, glowAmount: 40, glowColor: "#fff" }).indexOf("0 0 5px") >= 0,
+  P.glowShadow(7, { applyGlow: true, glowAmount: 40, glowColor: "#fff" }));
+check("the stage and the cards both go through glowShadow",
+  (source.match(/glowShadow\(/g) || []).length >= 3,
+  (source.match(/glowShadow\(/g) || []).length + " uses");
+
+console.log("");
+console.log("the live stage measures itself after layout, not before");
 
 check("the live stage re-applies its scale once it has been laid out",
   /requestAnimationFrame/.test(stageSource) &&
@@ -128,17 +147,17 @@ check("no settings at all does not throw",
   P.captionPlacement(null).align === "center");
 
 check("the live stage places captions with it",
-  /captionPlacement\(settings\)/.test(previewSource) &&
-  /anchor\.style\.transform = spot\.transform/.test(previewSource));
+  /captionPlacement\(settings\)/.test(source) &&
+  /anchor\.style\.transform = spot\.transform/.test(source));
 check("the style cards place captions with it too",
-  /label\.style\.transform = spot\.transform/.test(previewSource));
+  /label\.style\.transform = spot\.transform/.test(source));
 check("a card keeps the stylesheet's readable size",
-  !/function scaleCard[\s\S]{0,700}applyTextStyle/.test(previewSource),
+  !/function scaleCard[\s\S]{0,700}applyTextStyle/.test(source),
   "cards are a picker, so they do not scale type with the comp");
 check("a card's position comes from its own preset",
-  /presetSettings\(preset\)/.test(previewSource));
+  /presetSettings\(preset\)/.test(source));
 check("the cards wait for layout before scaling",
-  /requestAnimationFrame\(function \(\) \{ scaleCard\(frame, preset\); \}\)/.test(previewSource));
+  /requestAnimationFrame\(function \(\) \{ scaleCard\(frame, preset\); \}\)/.test(source));
 
 console.log("");
 console.log("the caption keeps its share of the frame on any comp width");
@@ -202,7 +221,7 @@ check("near grows with the amount", g0.near < g50.near && g50.near < g100.near,
 check("far grows with the amount", g0.far < g50.far && g50.far < g100.far,
   JSON.stringify([g0.far, g50.far, g100.far]));
 check("near never exceeds far", g100.near <= g100.far, g100.near + " vs " + g100.far);
-check("a small preview gets a small halo", g0.far <= 4, String(g0.far));
+check("a small preview still gets a visible halo", g0.far >= 5, String(g0.far));
 check("a bigger preview gets a bigger halo", P.glowRadii(33, 50).far > g50.far,
   P.glowRadii(33, 50).far + " vs " + g50.far);
 check("a missing amount uses the default",

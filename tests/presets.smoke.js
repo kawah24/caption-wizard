@@ -212,6 +212,18 @@ for (var p = 0; p < presets.length; p++) {
 }
 
 console.log("");
+console.log("the neon styles ship with a glow");
+
+["neon", "neon-karaoke"].forEach(function (id) {
+  var shipped = P.resolveSettings(id, {});
+  check(id + " has a glow by default", shipped.applyGlow === true, String(shipped.applyGlow));
+  check(id + " glows in a colour of its own",
+    typeof shipped.glowColor === "string" && shipped.glowColor.length > 0, String(shipped.glowColor));
+  check(id + " glows enough to see",
+    shipped.glowAmount >= 25 && shipped.glowAmount <= 100, String(shipped.glowAmount));
+});
+
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
