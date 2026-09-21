@@ -251,6 +251,29 @@ check("captions stay in order",
   kept.captions[1].startMs >= kept.captions[0].endMs);
 
 console.log("");
+console.log("the first cue is pulled back to where the speech starts");
+
+var lateCues = [{ text: "In 1974", startMs: 700, endMs: 6100, words: [{ text: "In", startMs: 700, endMs: 900 }] }];
+T.clampFirstCue(lateCues, 294);
+eq("a late first cue moves to the onset", lateCues[0].startMs, 294);
+eq("its first word moves with it", lateCues[0].words[0].startMs, 294);
+eq("the end is left alone", lateCues[0].endMs, 6100);
+
+var closeCues = [{ text: "x", startMs: 350, endMs: 900 }];
+T.clampFirstCue(closeCues, 294);
+eq("a cue already close enough is left alone", closeCues[0].startMs, 350);
+
+var laterCues = [{ text: "a", startMs: 900, endMs: 1200 }, { text: "b", startMs: 1300, endMs: 1600 }];
+T.clampFirstCue(laterCues, 500);
+eq("only the first cue moves", laterCues[1].startMs, 1300);
+
+var noOnset = [{ text: "x", startMs: 900, endMs: 1200 }];
+T.clampFirstCue(noOnset, undefined);
+eq("no onset from the transcriber means no change", noOnset[0].startMs, 900);
+T.clampFirstCue(noOnset, -1);
+eq("a nonsense onset is ignored", noOnset[0].startMs, 900);
+check("an empty plan is safe", T.clampFirstCue([], 100).length === 0);
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

@@ -346,6 +346,30 @@
   }
 
   /**
+   * Move the first cue to where the speech actually starts.
+   *
+   * Whisper places its first segment conservatively, so an opening caption can
+   * land well after the speaker began - 0.7s on one run and 2.7s on another, for
+   * the same clip and model. The transcriber reports where sound actually starts,
+   * and this pulls the first cue back onto it. It moves the first cue only, never
+   * invents words, and does nothing when the cue is already close enough.
+   */
+  function clampFirstCue(cues, onsetMs, toleranceMs) {
+    if (!cues || !cues.length) return cues;
+    if (typeof onsetMs !== "number" || !isFinite(onsetMs) || onsetMs < 0) return cues;
+
+    var tolerance = (typeof toleranceMs === "number") ? toleranceMs : 250;
+    var first = cues[0];
+    if (!(first.startMs > onsetMs + tolerance)) return cues;
+
+    var shifted = Math.round(onsetMs);
+    first.startMs = shifted;
+    if (first.words && first.words.length && first.words[0].startMs > shifted) {
+      first.words[0].startMs = shifted;
+    }
+    return cues;
+  }
+  /**
    * Break cues at sentence ends.
    *
    * The panel can be asked for one caption per sentence. Ends are found in the
@@ -534,7 +558,8 @@
   root.LcpTranscript = {
     DEFAULTS: DEFAULTS,
     planCaptions: planCaptions,
-  estimateLayers: estimateLayers,
+    estimateLayers: estimateLayers,
+    clampFirstCue: clampFirstCue,
     planFromCues: planFromCues,
     pickPreviewCaption: pickPreviewCaption,
     splitIntoLines: splitIntoLines,

@@ -281,6 +281,7 @@ def run_transcribe(args):
             "language": detected,
             "model": args.model,
             "durationMs": int(total * 1000),
+            "onsetMs": detect_speech_onset(find_ffmpeg(), audio_path),
             "segments": out_segments,
         })
         return 0
@@ -289,6 +290,46 @@ def run_transcribe(args):
         return 1
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
+
+
+def detect_speech_onset(ffmpeg, input_path):
+    """Where the sound actually starts, in milliseconds.
+
+    Whisper places its first segment conservatively, so the opening caption can
+    land well after the speaker began. Measuring the onset with ffmpeg lets the
+    panel pull the first cue back onto it. Returns None when it cannot tell, and 0
+    when the clip opens with sound.
+    """
+    if not ffmpeg:
+        return None
+    try:
+        result = subprocess.run(
+            [ffmpeg, "-hide_banner", "-i", input_path,
+             "-af", "silencedetect=noise=-35dB:d=0.25", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=120)
+    except Exception:
+        return None
+
+    text = (result.stderr or "") + (result.stdout or "")
+    starts_at_zero = False
+    onset = None
+    for line in text.splitlines():
+        pos = line.find("silence_start:")
+        if pos >= 0:
+            try:
+                starts_at_zero = float(line[pos + len("silence_start:"):].split()[0]) <= 0.05
+            except Exception:
+                starts_at_zero = False
+        pos = line.find("silence_end:")
+        if pos >= 0 and onset is None:
+            try:
+                onset = float(line[pos + len("silence_end:"):].split("|")[0].split()[0])
+            except Exception:
+                onset = None
+
+    if onset is None:
+        return 0 if not starts_at_zero else None
+    return int(round(onset * 1000))
 
 
 def main():
