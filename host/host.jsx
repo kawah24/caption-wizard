@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.17"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.18"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.17";
+var LCP_VERSION = "1.8.18";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -779,19 +779,47 @@ function lcp_addGlowBackdrop(comp, textLayer, style) {
 }
 
 /**
+ * The caption's own box, measured as generously as After Effects allows.
+ *
+ * sourceRectAtTime is the honest source, but it returns nothing for some text
+ * layers until they are settled, so this tries the plain reading, then one that
+ * includes the glyph extents, then a moment later in the layer's own time.
+ */
+function lcp_measureCaption(textLayer) {
+  var attempts = 0;
+  while (attempts < 3) {
+    var at = attempts === 2 ? textLayer.inPoint + 0.01 : textLayer.inPoint;
+    var deep = attempts === 1;
+    var rect = null;
+    try { rect = textLayer.sourceRectAtTime(at, deep); } catch (e) { rect = null; }
+    if (rect && rect.width > 0 && rect.height > 0) return rect;
+    attempts += 1;
+  }
+  return null;
+}
+
+/** A rectangle shape layer, for when a solid will not be accepted. */
+function lcp_addBarShape(comp, width, height, style) {
+  var layer = comp.layers.addShape();
+  var contents = layer.property("ADBE Root Vectors Group");
+  var group = contents.addProperty("ADBE Vector Group");
+  var inner = group.property("ADBE Vectors Group");
+  var rect = inner.addProperty("ADBE Vector Shape - Rect");
+  rect.property("ADBE Vector Rect Size").setValue([width, height]);
+  var fill = inner.addProperty("ADBE Vector Graphic - Fill");
+  fill.property("ADBE Vector Fill Color").setValue(lcp_hexToRgb(style.boxColor || "#000000"));
+  return layer;
+}
+
+/**
  * A solid bar behind the caption, sized from the text block itself.
  * Returns the bar layer, or null when it could not be built.
  */
 function lcp_addBox(comp, textLayer, style) {
   _lcpBoxNote = "";
-  var rect = null;
-  try { rect = textLayer.sourceRectAtTime(textLayer.inPoint, false); }
-  catch (e1) {
-    _lcpBoxNote = "the caption text box could not be measured: " + e1.toString();
-    return null;
-  }
-  if (!rect || !rect.width || !rect.height) {
-    _lcpBoxNote = "the caption text box measured empty, so there is nothing to fit a bar to";
+  var rect = lcp_measureCaption(textLayer);
+  if (!rect) {
+    _lcpBoxNote = "the caption text box could not be measured, even at a nearby time";
     return null;
   }
 
@@ -803,10 +831,22 @@ function lcp_addBox(comp, textLayer, style) {
   var textY = lcp_num(style.posY, 78) / 100 * comp.height;
 
   var bar = null;
+  var how = "solid";
   try {
     bar = comp.layers.addSolid(lcp_hexToRgb(style.boxColor || "#000000"), "bar", width, height, 1, comp.duration);
   } catch (e2) {
-    _lcpBoxNote = "adding the solid failed: " + e2.toString();
+    // A solid is the lighter way to draw a plain rectangle, but if this After
+    // Effects build will not take it, a shape layer draws the same thing.
+    try {
+      bar = lcp_addBarShape(comp, width, height, style);
+      how = "shape layer";
+    } catch (e3) {
+      _lcpBoxNote = "neither a solid nor a shape layer could be added: " + e2.toString() + " / " + e3.toString();
+      return null;
+    }
+  }
+  if (!bar) {
+    _lcpBoxNote = "the bar layer came back empty";
     return null;
   }
 
@@ -827,7 +867,7 @@ function lcp_addBox(comp, textLayer, style) {
 
   lcp_applyMotion(bar, style, comp, bar.inPoint, bar.outPoint, [centreX, centreY]);
   _lcpBoxNote = "added a " + Math.round(width) + "x" + Math.round(height) + " bar at " +
-                Math.round(centreX) + "," + Math.round(centreY);
+                Math.round(centreX) + "," + Math.round(centreY) + " as a " + how;
   return bar;
 }
 

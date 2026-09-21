@@ -380,6 +380,39 @@ function fakeCreateComp(width, height, duration) {
       var layer = add(name);
       layer._solid = { color: color, width: w, height: h, aspect: aspect, duration: dur };
       return layer;
+    },
+    // The fallback path: a rectangle shape layer, which is what a build that
+    // refuses addSolid is given instead.
+    addShape: function () {
+      var layer = add("Shape Layer");
+      var note = { size: null, fill: null };
+      var rectProp = { setValue: function (v) { note.size = v; } };
+      var fillProp = { setValue: function (v) { note.fill = v; } };
+      var inner = {
+        addProperty: function (type) {
+          if (type === "ADBE Vector Shape - Rect") return { property: function () { return rectProp; } };
+          if (type === "ADBE Vector Graphic - Fill") return { property: function () { return fillProp; } };
+          return { property: function () { return { setValue: function () {} }; } };
+        }
+      };
+      var group = { property: function () { return inner; } };
+      var shapeProps = {};
+      layer.property = function (name) {
+        if (name === "ADBE Root Vectors Group") {
+          return { addProperty: function () { return group; } };
+        }
+        if (!shapeProps[name]) {
+          shapeProps[name] = {
+            numProperties: 0,
+            property: function () { return null; },
+            setValue: function () {},
+            setValueAtTime: function () {}
+          };
+        }
+        return shapeProps[name];
+      };
+      layer._shape = note;
+      return layer;
     }
   };
   comp.addUntagged = function (text) { return add(text); };
@@ -873,6 +906,38 @@ if (boxSamples.length) {
     sample.bar.inPoint === 0 && sample.bar.outPoint > sample.bar.inPoint,
     "in=" + sample.bar.inPoint + " out=" + sample.bar.outPoint);
 }
+console.log("");
+console.log("the bar survives a hostile After Effects");
+
+// a build that refuses addSolid must still get its bar, as a shape layer
+var hostile = fakeCreateComp(1080, 1920, 10);
+hostile.layers.addSolid = function () { throw new Error("addSolid is not available here"); };
+var hostileStyle = lcpPresets.resolveSettings("shorts-box", {}, lcpPresets.TIMING_DEFAULTS);
+var hostileRes = runCreate(hostile, [phrase("boxed caption", 0, 2000)], hostileStyle, true);
+var hostileBars = hostile.allLayers().filter(function (l) { return l.name === "Shape Layer"; });
+check("a boxed style still gets a bar when a solid is refused",
+  hostileBars.length === 1, "shape layers: " + hostileBars.length + "  result: " + JSON.stringify(hostileRes));
+check("and the layer is measured as the text plus padding",
+  hostileBars.length === 1 && hostileBars[0]._shape && hostileBars[0]._shape.size &&
+  hostileBars[0]._shape.size[0] > hostileBars[0]._shape.size[1],
+  JSON.stringify(hostileBars.length ? hostileBars[0]._shape : null));
+check("the solid's failure is visible in the note, not swallowed",
+  /shape layer/.test(hostileRes.boxNote || ""), "note: " + hostileRes.boxNote);
+
+// measurement retry: a layer that only answers a moment after its own in point
+var late = {
+  inPoint: 1,
+  sourceRectAtTime: function (at) {
+    return at > 1 ? { left: 0, top: -30, width: 200, height: 40 } : null;
+  }
+};
+var measured = sandbox.lcp_measureCaption(late);
+check("a caption that needs a moment to settle is still measured",
+  !!(measured && measured.width === 200), JSON.stringify(measured));
+
+var never = { inPoint: 1, sourceRectAtTime: function () { return null; } };
+check("a caption that never reports a box is reported as unmeasurable",
+  sandbox.lcp_measureCaption(never) === null);
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
