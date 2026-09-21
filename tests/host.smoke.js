@@ -333,8 +333,8 @@ function fakeCreateComp(width, height, duration) {
           props[name] = {
             numProperties: 0,
             property: function () { return null; },
-            setValue: function () {},
-            setValueAtTime: function () {}
+            setValue: function (v) { if (name === "Opacity" && layer._opacity) layer._opacity.push(v); },
+            setValueAtTime: function (t, v) { if (name === "Opacity" && layer._opacity) layer._opacity.push(v); }
           };
         }
         return props[name];
@@ -358,6 +358,7 @@ function fakeCreateComp(width, height, duration) {
         return { left: 0, top: -30, width: String(text).length * 10, height: 40 };
       }
     };
+    layer._opacity = [];
     layers.push(layer);
     return layer;
   }
@@ -405,8 +406,8 @@ function fakeCreateComp(width, height, duration) {
           shapeProps[name] = {
             numProperties: 0,
             property: function () { return null; },
-            setValue: function () {},
-            setValueAtTime: function () {}
+            setValue: function (v) { if (name === "Opacity" && layer._opacity) layer._opacity.push(v); },
+            setValueAtTime: function (t, v) { if (name === "Opacity" && layer._opacity) layer._opacity.push(v); }
           };
         }
         return shapeProps[name];
@@ -938,6 +939,34 @@ check("a caption that needs a moment to settle is still measured",
 var never = { inPoint: 1, sourceRectAtTime: function () { return null; } };
 check("a caption that never reports a box is reported as unmeasurable",
   sandbox.lcp_measureCaption(never) === null);
+console.log("");
+console.log("the bar keeps its own opacity");
+
+var opComp = fakeCreateComp(1080, 1920, 10);
+var opStyle = lcpPresets.resolveSettings("shorts-box", {}, lcpPresets.TIMING_DEFAULTS);
+opStyle.boxOpacity = 10;
+var opRes = runCreate(opComp, [phrase("boxed caption", 0, 2000)], opStyle, true);
+var barLayers = opComp.allLayers().filter(function (l) {
+  return l.name === "bar" || /Shape Layer/.test(l.name);
+});
+check("the boxed style produced a bar layer to test", barLayers.length === 1,
+  "found " + barLayers.length + "  result: " + JSON.stringify(opRes));
+if (barLayers.length === 1) {
+  var written = barLayers[0]._opacity || [];
+  var tooHigh = written.filter(function (v) { return v > 10.0001; });
+  check("nothing writes an opacity above the bar's own setting",
+    tooHigh.length === 0, "wrote " + JSON.stringify(written.slice(0, 12)));
+  check("the bar does reach its setting",
+    written.indexOf(10) >= 0, "wrote " + JSON.stringify(written.slice(0, 12)));
+}
+
+var capComp = fakeCreateComp(1080, 1920, 10);
+var capStyle = lcpPresets.resolveSettings("shorts-box", {}, lcpPresets.TIMING_DEFAULTS);
+runCreate(capComp, [phrase("plain caption", 0, 2000)], capStyle, true);
+var capText = capComp.allLayers().filter(function (l) { return !/Shape Layer|^bar$/.test(l.name); })[0];
+check("a caption layer still reaches full opacity",
+  !!capText && (capText._opacity || []).indexOf(100) >= 0,
+  JSON.stringify(capText ? capText._opacity : null));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

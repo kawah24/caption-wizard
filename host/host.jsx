@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.18"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.19"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.18";
+var LCP_VERSION = "1.8.19";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -865,7 +865,8 @@ function lcp_addBox(comp, textLayer, style) {
   try { bar.property("Position").setValue([centreX, centreY]); } catch (e5) { /* ignore */ }
   try { bar.moveAfter(textLayer); } catch (e6) { /* ignore */ }
 
-  lcp_applyMotion(bar, style, comp, bar.inPoint, bar.outPoint, [centreX, centreY]);
+  lcp_applyMotion(bar, style, comp, bar.inPoint, bar.outPoint, [centreX, centreY],
+                  lcp_num(style.boxOpacity, 70) / 100);
   _lcpBoxNote = "added a " + Math.round(width) + "x" + Math.round(height) + " bar at " +
                 Math.round(centreX) + "," + Math.round(centreY) + " as a " + how;
   return bar;
@@ -1107,7 +1108,14 @@ function lcp_buildTextDocument(textLayer, style) {
 }
 
 /** Add the in/out animation for a motion profile to one layer. */
-function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition) {
+/**
+ * `opacityScale` caps every opacity this motion writes, as a fraction.
+ *
+ * The background bar is meant to be semi-transparent, and these motions key opacity
+ * from 0 to 100 - so without this the bar's own setting was overwritten the moment
+ * a motion was applied, and a bar set to 10% rendered solid.
+ */
+function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition, opacityScale) {
   var motion = String(style.motion || "none");
   var posX = lcp_num(style.posX, 50) / 100 * comp.width;
   var posY = lcp_num(style.posY, 78) / 100 * comp.height;
@@ -1128,6 +1136,7 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
   var position = layer.property("Position");
   var scale = layer.property("Scale");
   var opacity = layer.property("Opacity");
+  var oScale = (opacityScale === undefined || opacityScale === null || isNaN(opacityScale)) ? 1 : opacityScale;
 
   function keyPosition(time, x, y) {
     try { position.setValueAtTime(time, [x, y]); } catch (err) { /* ignore */ }
@@ -1136,7 +1145,7 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
     try { scale.setValueAtTime(time, [value, value]); } catch (err) { /* ignore */ }
   }
   function keyOpacity(time, value) {
-    try { opacity.setValueAtTime(time, value); } catch (err) { /* ignore */ }
+    try { opacity.setValueAtTime(time, value * oScale); } catch (err) { /* ignore */ }
   }
 
   var dx = comp.width * 0.06;
