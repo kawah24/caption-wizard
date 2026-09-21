@@ -306,7 +306,7 @@
     var stage = el.stageContainer ? el.stageContainer.firstChild : null;
     if (!stage) return;
     var comp = currentCompSize();
-    root.LcpPreviews.sizeStage(stage, comp.width, comp.height, 300);
+    root.LcpPreviews.sizeStage(stage, comp.width, comp.height, STAGE_MAX_HEIGHT);
   }
 
   /** A real caption from the transcript, for the preview stage. */
@@ -335,7 +335,7 @@
       disableMedia: true,
       compWidth: comp.width,
       compHeight: comp.height,
-      maxHeight: 300,
+      maxHeight: STAGE_MAX_HEIGHT,
       caption: caption
     });
     el.stageContainer.appendChild(stage);
@@ -519,6 +519,18 @@
     if (settings.applyShadow || settings.applyGlow) {
       notes.push("shadow and glow are approximated in this preview");
     }
+
+    // Say the scale out loud. The preview is a scaled view of the comp, so a
+    // caption cannot be drawn at its comp size here - what has to match is its
+    // share of the frame. Printing both numbers makes that checkable instead of
+    // a matter of opinion.
+    var stage = el.stageContainer ? el.stageContainer.firstChild : null;
+    var frameWidth = stage ? stage.clientWidth : 0;
+    if (frameWidth > 0) {
+      var drawn = Math.round(settings.fontSize * root.LcpPreviews.sizeFactor(frameWidth));
+      notes.push("this " + frameWidth + "px frame draws a " + Math.round(settings.fontSize) +
+                 "px caption at " + drawn + "px - the same share of the frame as the comp");
+    }
     if (state.generatedFingerprint && state.generatedFingerprint !== generationFingerprint()) {
       notes.push("settings or text changed since you generated - press Generate Captions " +
                  "to update the comp to this preview");
@@ -537,6 +549,16 @@
            info.layers + " layer(s)" +
            (info.generated ? "  " + info.generated + " from this panel" : "");
   }
+
+  /**
+   * How tall the preview frame may grow.
+   *
+   * A portrait comp is capped by height, so this decides how wide the frame gets
+   * and therefore how large the caption is drawn. At 300 a 1080x1920 comp gave a
+   * 169px-wide frame, which rendered a 150px caption at 13px - legible, but small
+   * enough to look like a different size from the comp. 420 gives it 236px.
+   */
+  var STAGE_MAX_HEIGHT = 420;
 
   function refreshCompInfo() {
     if (!state.hostReady) return;

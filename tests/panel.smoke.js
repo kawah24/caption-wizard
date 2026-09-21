@@ -141,6 +141,22 @@ check("it never touches the chosen audio path", focusHandler.indexOf("useCompMed
 check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
+console.log("the preview is a scaled view, and says so");
+
+check("the stage cap is one named constant",
+  /var STAGE_MAX_HEIGHT = \d+;/.test(js), "so the two call sites cannot drift apart");
+check("no bare 300 is left for the stage height",
+  !/sizeStage\(stage, comp\.width, comp\.height, 300\)/.test(js) && !/maxHeight: 300,/.test(js));
+check("both call sites use the constant",
+  (js.match(/STAGE_MAX_HEIGHT/g) || []).length >= 3,
+  (js.match(/STAGE_MAX_HEIGHT/g) || []).length + " uses");
+check("the note prints the frame width and the drawn size",
+  /draws a " \+ Math\.round\(settings\.fontSize\)/.test(js) &&
+  /root\.LcpPreviews\.sizeFactor\(frameWidth\)/.test(js));
+check("the note explains that the share is what matches",
+  /same share of the frame as the comp/.test(js));
+
+console.log("");
 console.log("the panel reports what the host actually did");
 
 check("the generate message says where the caption was placed",
