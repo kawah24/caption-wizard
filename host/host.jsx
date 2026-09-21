@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.3.3"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.3.4"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.3.3";
+var LCP_VERSION = "1.3.4";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -633,6 +633,63 @@ function lcp_addShadow(layer, style) {
 }
 
 /**
+ * Blur a layer over its life, the way the preview's Blur Fade does.
+ *
+ * After Effects has no per-layer blur property, so this is a blur effect with its
+ * radius keyframed: soft on the way in, sharp while the caption is held, soft
+ * again on the way out. The radius follows the text size, matching the preview,
+ * which blurs 6px against a 13px caption - about 0.45 of the text.
+ */
+function lcp_blurLayer(layer, fontPx, sharpAt, softAgainAt) {
+  var softIn = Math.max(1, Math.round(fontPx * 0.45));
+  var softOut = Math.max(1, Math.round(fontPx * 0.38));
+
+  try {
+    var effects = layer.property("Effects");
+    var blur = null;
+    try { blur = effects.addProperty("ADBE Gaussian Blur 2"); } catch (e1) { blur = null; }
+    if (!blur) { try { blur = effects.addProperty("ADBE Box Blur2"); } catch (e2) { blur = null; } }
+    if (!blur) { lcp_logEffect("blur", "failed"); return; }
+    lcp_logEffect("blur", "ok");
+
+    var radius = null;
+    try { radius = blur.property("Blurriness"); } catch (e3) { radius = null; }
+    if (!radius) { try { radius = blur.property(1); } catch (e4) { radius = null; } }
+    if (!radius) return;
+
+    radius.setValueAtTime(layer.inPoint, softIn);
+    radius.setValueAtTime(sharpAt, 0);
+    radius.setValueAtTime(softAgainAt, 0);
+    radius.setValueAtTime(layer.outPoint, softOut);
+  } catch (err) { lcp_logEffect("blur", "failed"); }
+}
+
+/**
+ * Flash a layer bright as it lands, for the neon motion.
+ *
+ * The preview raises the text's brightness as the caption appears; a scale-in on
+ * its own is a different look. Brightness & Contrast takes a percentage, so the
+ * preview's 2.2x multiplier becomes +120 and its 1.6x exit becomes +60.
+ */
+function lcp_flashLayer(layer, settleAt, fadeAt) {
+  try {
+    var flash = layer.property("Effects").addProperty("ADBE Brightness & Contrast 2");
+    if (!flash) { lcp_logEffect("brightness", "failed"); return; }
+    lcp_logEffect("brightness", "ok");
+
+    var brightness = null;
+    try { brightness = flash.property("Brightness"); } catch (e1) { brightness = null; }
+    if (!brightness) { try { brightness = flash.property(1); } catch (e2) { brightness = null; } }
+    if (!brightness) return;
+
+    brightness.setValueAtTime(layer.inPoint, 120);
+    brightness.setValueAtTime(settleAt, 0);
+    brightness.setValueAtTime(fadeAt, 0);
+    brightness.setValueAtTime(layer.outPoint, 60);
+  } catch (err) { lcp_logEffect("brightness", "failed"); }
+}
+
+/**
  * The Glow effect itself ("ADBE Glo2").
  *
  * The numbers here deliberately mirror the panel preview, which draws the halo as
@@ -1048,10 +1105,13 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
     keyOpacity(layer.inPoint, 0);
     keyOpacity(layer.inPoint + (inEnd - layer.inPoint) * 0.5, 100);
   } else if (motion === "blurFade") {
-    keyScale(layer.inPoint, 104);
+    keyScale(layer.inPoint, 106);
     keyScale(inEnd, 100);
     keyOpacity(layer.inPoint, 0);
     keyOpacity(inEnd, 100);
+    // Without this the style is only a scale fade: the blur is what makes it
+    // Blur Fade, and the preview has always animated it.
+    lcp_blurLayer(layer, lcp_num(style.fontSize, 72) * lcp_compScale(layer), inEnd, outStart);
   } else if (motion === "wordPunch") {
     keyScale(layer.inPoint, 92);
     keyScale(inEnd, 100);
@@ -1062,6 +1122,9 @@ function lcp_applyMotion(layer, style, comp, secondsIn, secondsOut, basePosition
     keyScale(inEnd, 100);
     keyOpacity(layer.inPoint, 0);
     keyOpacity(inEnd, 100);
+    // The preview flashes the text bright as it lands; without this the comp is
+    // just a scale-in.
+    lcp_flashLayer(layer, inEnd, outStart);
   } else if (motion === "slideRight") {
     keyPosition(layer.inPoint, posX - dx, posY);
     keyPosition(inEnd, posX, posY);

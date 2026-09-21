@@ -316,6 +316,9 @@ function fakeCreateComp(width, height, duration) {
                     effectProps[propName] = {
                       setValue: function (value) {
                         comp._glowProps[effectName + "." + propName] = value;
+                      },
+                      setValueAtTime: function (time, value) {
+                        comp._glowProps[effectName + "." + propName + "@" + time] = value;
                       }
                     };
                   }
@@ -665,6 +668,67 @@ runCreate(brighterComp, two, baseStyle({ applyGlow: true, glowAmount: 100, fontS
 check("a higher amount gives a wider halo",
   brighterComp.glowProps()["ADBE Glo2.Glow Radius"] > glowProps["ADBE Glo2.Glow Radius"],
   brighterComp.glowProps()["ADBE Glo2.Glow Radius"] + "px vs " + glowProps["ADBE Glo2.Glow Radius"] + "px");
+
+console.log("");
+console.log("the comp animates what the preview animates");
+
+var blurComp = fakeCreateComp(1080, 1920, 10);
+runCreate(blurComp, two, baseStyle({ motion: "blurFade", fontSize: 150 }), true);
+check("Blur Fade asks for a real blur in the comp",
+  blurComp.effectsAdded().indexOf("ADBE Gaussian Blur 2") >= 0 ||
+  blurComp.effectsAdded().indexOf("ADBE Box Blur2") >= 0,
+  JSON.stringify(blurComp.effectsAdded()));
+var blurKeys = Object.keys(blurComp.glowProps()).filter(function (k) { return k.indexOf(".Blurriness@") >= 0; });
+check("the blur is keyframed, not constant", blurKeys.length >= 3, blurKeys.length + " keyframe(s)");
+check("it starts soft and sharpens",
+  blurComp.glowProps()[blurKeys[0]] > 0 && blurKeys.some(function (k) { return blurComp.glowProps()[k] === 0; }),
+  blurKeys.map(function (k) { return blurComp.glowProps()[k]; }).join(", "));
+check("the soft radius follows the text size",
+  blurComp.glowProps()[blurKeys[0]] >= Math.round(150 * (1080 / 1920) * 0.4),
+  String(blurComp.glowProps()[blurKeys[0]]));
+
+var neonFlash = fakeCreateComp(1080, 1920, 10);
+runCreate(neonFlash, two, baseStyle({ motion: "neon" }), true);
+check("Neon asks for a brightness flash in the comp",
+  neonFlash.effectsAdded().indexOf("ADBE Brightness & Contrast 2") >= 0,
+  JSON.stringify(neonFlash.effectsAdded()));
+check("the flash is keyframed from bright to settled",
+  Object.keys(neonFlash.glowProps()).some(function (k) { return k.indexOf(".Brightness@") >= 0; }),
+  Object.keys(neonFlash.glowProps()).join(", "));
+
+// Anything a preview keyframe animates has to be reproduced by the host, or be
+// listed here with its reason. This is what would have caught Blur Fade and Neon
+// ignoring their own filters.
+var hostSource = fs.readFileSync(hostPath, "utf8");
+var cssSource = fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8");
+var hostCan = {
+  opacity: /keyOpacity\(/.test(hostSource),
+  transform: /keyPosition\(|keyScale\(/.test(hostSource),
+  color: /fillColor/.test(hostSource),
+  filter: /ADBE Gaussian Blur 2/.test(hostSource) && /ADBE Brightness & Contrast 2/.test(hostSource)
+};
+var acceptedGaps = {
+  "letter-spacing": "Cinematic's tracking stays static in the comp; its drift is scale"
+};
+var animatedProps = {};
+var frameRe = /@keyframes (lcp\w+) \{([\s\S]*?)\n\}/g;
+var frame;
+while ((frame = frameRe.exec(cssSource))) {
+  var propRe = /([a-z-]+):\s/g;
+  var prop;
+  while ((prop = propRe.exec(frame[2]))) {
+    if (!animatedProps[prop[1]]) animatedProps[prop[1]] = [];
+    if (animatedProps[prop[1]].indexOf(frame[1]) < 0) animatedProps[prop[1]].push(frame[1]);
+  }
+}
+check("the keyframe scan found the motions", Object.keys(animatedProps).length >= 4,
+  Object.keys(animatedProps).sort().join(", "));
+var unsupported = Object.keys(animatedProps).filter(function (p) {
+  return hostCan[p] !== true && !acceptedGaps[p];
+});
+check("every animated property is reproduced or a documented gap",
+  unsupported.length === 0,
+  unsupported.map(function (p) { return p + " (" + animatedProps[p].join("/") + ")"; }).join(" | "));
 
 console.log("");
 if (failures) {
