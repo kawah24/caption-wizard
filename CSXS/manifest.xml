@@ -6,11 +6,11 @@
 -->
 <ExtensionManifest Version="11.0"
   ExtensionBundleId="com.captionwizard.panel"
-  ExtensionBundleVersion="1.8.16"
+  ExtensionBundleVersion="1.8.17"
   ExtensionBundleName="Caption Wizard">
 
   <ExtensionList>
-    <Extension Id="com.captionwizard.panel" Version="1.8.16" />
+    <Extension Id="com.captionwizard.panel" Version="1.8.17" />
   </ExtensionList>
 
   <ExecutionEnvironment>

@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.16"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.17"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.16";
+var LCP_VERSION = "1.8.17";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -28,6 +28,7 @@ var LCP_TAG = "LCP::created";
  * really did instead of what it intended.
  */
 var _lcpLastPlacement = null;
+var _lcpBoxNote = "";   // why the background bar was or was not built
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -782,9 +783,17 @@ function lcp_addGlowBackdrop(comp, textLayer, style) {
  * Returns the bar layer, or null when it could not be built.
  */
 function lcp_addBox(comp, textLayer, style) {
+  _lcpBoxNote = "";
   var rect = null;
-  try { rect = textLayer.sourceRectAtTime(textLayer.inPoint, false); } catch (e1) { return null; }
-  if (!rect || !rect.width || !rect.height) return null;
+  try { rect = textLayer.sourceRectAtTime(textLayer.inPoint, false); }
+  catch (e1) {
+    _lcpBoxNote = "the caption text box could not be measured: " + e1.toString();
+    return null;
+  }
+  if (!rect || !rect.width || !rect.height) {
+    _lcpBoxNote = "the caption text box measured empty, so there is nothing to fit a bar to";
+    return null;
+  }
 
   var padding = lcp_num(style.boxPadding, 18);
   var width = Math.max(4, rect.width + padding * 2);
@@ -796,7 +805,10 @@ function lcp_addBox(comp, textLayer, style) {
   var bar = null;
   try {
     bar = comp.layers.addSolid(lcp_hexToRgb(style.boxColor || "#000000"), "bar", width, height, 1, comp.duration);
-  } catch (e2) { return null; }
+  } catch (e2) {
+    _lcpBoxNote = "adding the solid failed: " + e2.toString();
+    return null;
+  }
 
   try { bar.comment = LCP_TAG; } catch (e3) { /* tag is only needed for clear */ }
   bar.inPoint = textLayer.inPoint;
@@ -814,6 +826,8 @@ function lcp_addBox(comp, textLayer, style) {
   try { bar.moveAfter(textLayer); } catch (e6) { /* ignore */ }
 
   lcp_applyMotion(bar, style, comp, bar.inPoint, bar.outPoint, [centreX, centreY]);
+  _lcpBoxNote = "added a " + Math.round(width) + "x" + Math.round(height) + " bar at " +
+                Math.round(centreX) + "," + Math.round(centreY);
   return bar;
 }
 
@@ -1274,8 +1288,16 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, wantBar) {
 
   // The bar measures the text, so it has to be built while the layer already
   // holds its final text.
+  // The bar either gets built, or the reason it did not is recorded. Silence here
+  // is what made "no bar in the comp" so hard to chase.
   var bar = null;
-  if (wantBar && style.applyBox) bar = lcp_addBox(comp, layer, style);
+  if (wantBar && style.applyBox) {
+    bar = lcp_addBox(comp, layer, style);
+  } else if (!style.applyBox) {
+    _lcpBoxNote = "this style has the background bar turned off";
+  } else {
+    _lcpBoxNote = "this kind of caption layer does not take a background bar";
+  }
 
   lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, textY]);
   if (glowBackdrop) {
@@ -1318,6 +1340,7 @@ function lcp_create(payloadJson) {
   var created = 0;
   var backdrops = 0;
   var bars = 0;
+  _lcpBoxNote = "";
   var removed = 0;
   var errors = [];
   var warnings = [];
@@ -1423,6 +1446,7 @@ function lcp_create(payloadJson) {
   // captions.
   return '{"ok":true,"created":' + (created + backdrops + bars) +
          ',"text":' + created + ',"backdrops":' + backdrops + ',"bars":' + bars +
+         ',"boxNote":"' + lcp_esc(_lcpBoxNote) + '"' +
          ',"removed":' + removed + placement +
          ',"errors":' + lcp_jsonStringArray(errors) +
          ',"warnings":' + lcp_jsonStringArray(warnings) + "}";

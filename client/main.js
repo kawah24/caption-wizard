@@ -916,6 +916,7 @@
         message += ")";
       }
       message += ".";
+      if (result.boxNote) message += "  -  Background bar: " + result.boxNote;
       if (result.removed) {
         message = "Replaced " + result.removed + " previous layer(s). " + message;
       }
