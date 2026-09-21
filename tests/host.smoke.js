@@ -731,6 +731,69 @@ check("every animated property is reproduced or a documented gap",
   unsupported.map(function (p) { return p + " (" + animatedProps[p].join("/") + ")"; }).join(" | "));
 
 console.log("");
+console.log("what the preview shows is what the comp draws, ratio for ratio");
+
+// Every size-derived value must divide by the same reference on both sides. The
+// host authors against a 1920px comp; the preview against its own frame. What has
+// to match is each value as a fraction of the text size.
+var portraitFrame = 234;                        // the panel's frame for 1080x1920
+var previewFactor = lcpPreview.sizeFactor(portraitFrame);
+var compFactor = 1080 / 1920;
+var previewFontPx = 150 * previewFactor;
+var compFontPx = 150 * compFactor;
+
+// The preview can only draw whole pixels, and at an 18px text size one pixel of
+// rounding is over five percent of a radius. That is the tolerance, not a licence:
+// anything larger is a real difference between the two sides.
+var pixelSlack = 0.5 / previewFontPx;
+
+function ratioGap(previewValue, compValue) {
+  return Math.abs((previewValue / previewFontPx) - (compValue / compFontPx));
+}
+
+// Outline width 40, the value being used in practice.
+check("the outline is the same fraction of the text on both sides",
+  ratioGap(lcpPreview.strokePx(40, previewFactor), 40 * compFactor) < 1e-9,
+  lcpPreview.strokePx(40, previewFactor).toFixed(3) + "px vs " + (40 * compFactor).toFixed(3) + "px");
+
+// Glow radius, at amount 40.
+var previewGlow = lcpPreview.glowRadii(previewFontPx, 40).far;
+var compGlow = compFontPx * (0.20 + 0.80 * 0.40);
+check("the glow radius is the same fraction of the text on both sides",
+  ratioGap(previewGlow, compGlow) < pixelSlack,
+  previewGlow + "px vs " + compGlow.toFixed(1) + "px (rounding allowed)");
+
+// Drop shadow: the preview derives its offset and blur from the rendered size,
+// the host from the comp text size. Read the host's own numbers back.
+var shadowComp = fakeCreateComp(1080, 1920, 10);
+runCreate(shadowComp, two, baseStyle({ applyShadow: true, shadowAmount: 55, fontSize: 150 }), true);
+var shadowProps = shadowComp.glowProps();
+var hostDistance = shadowProps["ADBE Drop Shadow.Distance"];
+var hostSoftness = shadowProps["ADBE Drop Shadow.Softness"];
+check("the drop shadow effect is applied", hostDistance !== undefined, JSON.stringify(Object.keys(shadowProps)));
+if (hostDistance !== undefined) {
+  check("the shadow distance is the same fraction of the text on both sides",
+    Math.abs((150 * previewFactor * 0.10) / previewFontPx - hostDistance / compFontPx) < 0.02,
+    (150 * previewFactor * 0.10).toFixed(2) + "px vs " + hostDistance + "px");
+}
+if (hostSoftness !== undefined) {
+  check("the shadow softness is the same fraction of the text on both sides",
+    Math.abs((150 * previewFactor * 0.25) / previewFontPx - hostSoftness / compFontPx) < 0.02,
+    (150 * previewFactor * 0.25).toFixed(2) + "px vs " + hostSoftness + "px");
+}
+
+// Blur, for Blur Fade: both use 0.45 of the text size.
+var blurComp = fakeCreateComp(1080, 1920, 10);
+runCreate(blurComp, two, baseStyle({ motion: "blurFade", fontSize: 150 }), true);
+var blurKey = Object.keys(blurComp.glowProps()).filter(function (k) {
+  return k.indexOf(".Blurriness@") >= 0;
+})[0];
+check("the blur radius is the same fraction of the text on both sides",
+  blurKey !== undefined &&
+  Math.abs((compFontPx * 0.45) / compFontPx - blurComp.glowProps()[blurKey] / compFontPx) < 0.02,
+  blurKey ? blurComp.glowProps()[blurKey] + "px vs " + (compFontPx * 0.45).toFixed(1) + "px" : "no blur recorded");
+
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
