@@ -79,7 +79,7 @@
 
   var BASE_DEFAULTS = {
     fontFamily: "Anton",
-    fontSize: 72,
+    fontSize: 150,
     bold: false,
     fill: "#ffffff",
     filled: true,
@@ -156,7 +156,7 @@
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
                  "tracking", "transform", "maxWords", "align", "posX", "posY", "inDurMs", "outDurMs"],
       defaults: {
-        fontSize: 84, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true,
+        fontSize: 150, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true,
         strokeColor: "#000000", strokeWidth: 8, transform: "uppercase", posY: 76,
         applyGlow: false, glowColor: "#ff6fa5", glowAmount: 35,
         inDurMs: 200, outDurMs: 200
@@ -170,7 +170,7 @@
       previewLine: "Neon glow",
       controls: PLAIN_CONTROLS,
       defaults: {
-        fontSize: 80, fill: "#8ef7ff", strokeColor: "#1b2bff", strokeWidth: 12,
+        fontSize: 150, fill: "#8ef7ff", strokeColor: "#1b2bff", strokeWidth: 12,
         transform: "uppercase", applyGlow: true, glowColor: "#1b2bff", glowAmount: 40,
         inDurMs: 300, outDurMs: 220
       }
@@ -187,7 +187,7 @@
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
                  "tracking", "transform", "maxWords", "align", "posX", "posY", "inDurMs", "outDurMs"],
       defaults: {
-        fontSize: 80, karaokeHighlight: "#ff4df0", karaokeDim: "#8ef7ff", karaokePop: true,
+        fontSize: 150, karaokeHighlight: "#ff4df0", karaokeDim: "#8ef7ff", karaokePop: true,
         strokeColor: "#1b2bff", strokeWidth: 12, transform: "uppercase", posY: 76,
         applyGlow: true, glowColor: "#1b2bff", glowAmount: 40,
         inDurMs: 300, outDurMs: 220
@@ -202,7 +202,7 @@
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
                  "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
                  "tracking", "transform", "lines", "maxWords", "align", "posX", "posY"],
-      defaults: { fontSize: 68, posY: 80, strokeWidth: 5 }
+      defaults: { fontSize: 150, posY: 80, strokeWidth: 5 }
     },
     {
       id: "slide-up",
@@ -211,7 +211,7 @@
       motion: "slideUp",
       previewLine: "Sliding in",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 76, posY: 76, inDurMs: 320, outDurMs: 200 }
+      defaults: { fontSize: 150, posY: 76, inDurMs: 320, outDurMs: 200 }
     },
     {
       id: "slide-down",
@@ -220,7 +220,7 @@
       motion: "slideDown",
       previewLine: "Dropping in",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 76, posY: 30, inDurMs: 320, outDurMs: 200 }
+      defaults: { fontSize: 150, posY: 30, inDurMs: 320, outDurMs: 200 }
     },
     {
       id: "slide-left",
@@ -229,7 +229,7 @@
       motion: "slideLeft",
       previewLine: "From the right",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 74, inDurMs: 300, outDurMs: 200 }
+      defaults: { fontSize: 150, inDurMs: 300, outDurMs: 200 }
     },
     {
       id: "slide-right",
@@ -238,7 +238,7 @@
       motion: "slideRight",
       previewLine: "From the left",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 74, inDurMs: 300, outDurMs: 200 }
+      defaults: { fontSize: 150, inDurMs: 300, outDurMs: 200 }
     },
     {
       id: "pop-in",
@@ -247,7 +247,7 @@
       motion: "popIn",
       previewLine: "Pop!",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 84, fill: "#ffe14d", strokeWidth: 8, inDurMs: 240, outDurMs: 140 }
+      defaults: { fontSize: 150, fill: "#ffe14d", strokeWidth: 8, inDurMs: 240, outDurMs: 140 }
     },
     {
       id: "viral-pop",
@@ -257,7 +257,7 @@
       previewWords: ["THIS", "changed", "EVERYTHING"],
       controls: WORD_CONTROLS,
       defaults: {
-        fontSize: 118, fill: "#ffffff", strokeColor: "#000000", strokeWidth: 16,
+        fontSize: 150, fill: "#ffffff", strokeColor: "#000000", strokeWidth: 16,
         applyShadow: true, transform: "uppercase", tracking: 10, posY: 72,
         emphasisAuto: true, emphasisColor: "#ffd400", emphasisScale: 118,
         wordByWord: true, inDurMs: 90, outDurMs: 60
@@ -274,7 +274,7 @@
                  "strokeWidth", "applyShadow", "tracking", "transform", "lines", "align", "posX", "posY",
                  "applyBox", "boxColor", "boxOpacity", "boxPadding"],
       defaults: {
-        fontSize: 68, fill: "#ffffff", applyStroke: false, applyBox: true,
+        fontSize: 150, fill: "#ffffff", applyStroke: false, applyBox: true,
         boxColor: "#101010", boxOpacity: 80, boxPadding: 24, transform: "uppercase",
         lines: "2", posY: 74, inDurMs: 200, outDurMs: 140
       }
@@ -286,7 +286,7 @@
       motion: "zoomPunch",
       previewLine: "SLAM",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 92, fill: "#ffffff", strokeWidth: 9, transform: "uppercase", inDurMs: 200, outDurMs: 120 }
+      defaults: { fontSize: 150, fill: "#ffffff", strokeWidth: 9, transform: "uppercase", inDurMs: 200, outDurMs: 120 }
     },
     {
       id: "blur-fade",
@@ -295,7 +295,7 @@
       motion: "blurFade",
       previewLine: "Soft focus",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 70, inDurMs: 420, outDurMs: 340 }
+      defaults: { fontSize: 150, inDurMs: 420, outDurMs: 340 }
     },
     {
       id: "cinematic",
@@ -305,7 +305,7 @@
       previewLine: "A slow drift",
       controls: PLAIN_CONTROLS,
       defaults: {
-        fontSize: 52, bold: false, tracking: 120, fill: "#f2f2f2",
+        fontSize: 150, bold: false, tracking: 120, fill: "#f2f2f2",
         applyStroke: false, posY: 84, transform: "uppercase", inDurMs: 600, outDurMs: 600
       }
     },
@@ -316,7 +316,7 @@
       motion: "flickerOut",
       previewLine: "Flickering",
       controls: PLAIN_CONTROLS,
-      defaults: { fontSize: 78, strokeWidth: 7, inDurMs: 200, outDurMs: 400 }
+      defaults: { fontSize: 150, strokeWidth: 7, inDurMs: 200, outDurMs: 400 }
     },
     {
       id: "pulse",
@@ -326,7 +326,7 @@
       previewLine: "On the beat",
       controls: PLAIN_CONTROLS,
       defaults: {
-        fontSize: 80, fill: "#7ef0c2", strokeWidth: 7, transform: "uppercase",
+        fontSize: 150, fill: "#7ef0c2", strokeWidth: 7, transform: "uppercase",
         tracking: 40, inDurMs: 220, outDurMs: 200
       }
     },
@@ -338,7 +338,7 @@
       previewLine: "WATCH THIS",
       controls: PLAIN_CONTROLS,
       defaults: {
-        fontSize: 96, fill: "#ffffff", strokeColor: "#000000", strokeWidth: 12,
+        fontSize: 150, fill: "#ffffff", strokeColor: "#000000", strokeWidth: 12,
         transform: "uppercase", posY: 74, inDurMs: 200, outDurMs: 140
       }
     },
@@ -350,7 +350,7 @@
       previewLine: "KEEP GOING",
       controls: PLAIN_CONTROLS,
       defaults: {
-        fontSize: 92, fill: "#ff3b30", strokeColor: "#ffffff", strokeWidth: 8,
+        fontSize: 150, fill: "#ff3b30", strokeColor: "#ffffff", strokeWidth: 8,
         transform: "uppercase", posY: 60, inDurMs: 300, outDurMs: 220
       }
     },
@@ -362,7 +362,7 @@
       previewLine: "One word",
       controls: WORD_CONTROLS,
       defaults: {
-        fontSize: 104, fill: "#ffffff", strokeWidth: 8, transform: "uppercase",
+        fontSize: 150, fill: "#ffffff", strokeWidth: 8, transform: "uppercase",
         wordByWord: true, inDurMs: 120, outDurMs: 80
       },
       forceWordByWord: true
@@ -376,7 +376,7 @@
       controls: ["fontFamily", "fontSize", "bold", "applyStroke", "strokeColor", "strokeWidth",
                  "tracking", "transform", "lines", "maxWords", "align", "posX", "posY"],
       defaults: {
-        fontSize: 96, filled: false, applyStroke: true, strokeColor: "#ffffff",
+        fontSize: 150, filled: false, applyStroke: true, strokeColor: "#ffffff",
         strokeWidth: 6, transform: "uppercase", tracking: 20
       }
     }
