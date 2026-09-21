@@ -175,6 +175,10 @@ check("the clamp runs on the segments before the SRT and the cues are derived",
   /var segments = root\.LcpTranscript\.clampFirstCue\(result\.segments, result\.onsetMs\);/.test(js) &&
   /segmentsToSrt\(segments\)/.test(js) && /segmentsToCues\(segments\)/.test(js),
   "clamping the cues alone left the exported SRT late, which is what the panel showed");
+check("the model default is small, not whatever the markup lists first",
+  /var DEFAULT_MODEL = "small";/.test(js) &&
+  /MODELS\.indexOf\(savedModel\) >= 0 \? savedModel : DEFAULT_MODEL/.test(js),
+  "the select kept the first option, which is tiny");
 check("the status reports the pull so it is not a silent change",
   /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
   "a correction the user cannot see is indistinguishable from no correction");

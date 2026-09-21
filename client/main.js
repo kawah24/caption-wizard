@@ -44,6 +44,12 @@
   ];
 
   var MODELS = ["tiny", "base", "small", "medium", "large-v3"];
+  // What the model list defaults to before you have ever picked one. Measured on a
+  // real clip: base runs sentences together with commas where small breaks them
+  // properly, and medium is nearly three times slower for little gain now that the
+  // first cue is pulled onto the measured onset. Leaving this to the markup order
+  // sent tiny, because tiny is listed first.
+  var DEFAULT_MODEL = "small";
 
   /* ------------------------------------------------------------------ */
   /* host bridge helpers                                                */
@@ -1217,7 +1223,7 @@
 
     try {
       var savedModel = root.localStorage.getItem("lcp.model");
-      if (savedModel) el.modelSelect.value = savedModel;
+      el.modelSelect.value = MODELS.indexOf(savedModel) >= 0 ? savedModel : DEFAULT_MODEL;
       var savedLanguage = root.localStorage.getItem("lcp.language");
       if (savedLanguage) el.languageSelect.value = savedLanguage;
     } catch (err) { /* ignore */ }
