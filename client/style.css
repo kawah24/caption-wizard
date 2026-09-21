@@ -346,11 +346,15 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   100% { opacity: 0; transform: scale(1.06); }
 }
 
+/* The drift is scale and opacity. Tracking is not animated here: the comp cannot
+   animate a text document's tracking, and an inline letter-spacing overrides a
+   keyframe anyway, so listing it here only suggested a difference that never
+   existed. */
 @keyframes lcpCinematic {
-  0% { opacity: 0; transform: scale(1) translateY(4px); letter-spacing: 0.2em; }
-  25% { opacity: 1; transform: scale(1.02) translateY(0); letter-spacing: 0.2em; }
-  75% { opacity: 1; transform: scale(1.03) translateY(0); letter-spacing: 0.2em; }
-  100% { opacity: 0; transform: scale(1.05) translateY(-3px); letter-spacing: 0.2em; }
+  0% { opacity: 0; transform: scale(1) translateY(4px); }
+  25% { opacity: 1; transform: scale(1.02) translateY(0); }
+  75% { opacity: 1; transform: scale(1.03) translateY(0); }
+  100% { opacity: 0; transform: scale(1.05) translateY(-3px); }
 }
 
 @keyframes lcpFlickerOut {

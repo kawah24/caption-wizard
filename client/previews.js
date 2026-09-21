@@ -56,8 +56,12 @@
    * The marker is independent of the motion class: the comp highlights karaoke
    * words no matter which motion the style uses, so the preview has to as well.
    */
-  function withKaraokeMarker(label, preset) {
-    var karaoke = !!(preset && (preset.karaoke || preset.forceKaraoke));
+  function withKaraokeMarker(label, preset, settings) {
+    // The panel's own Karaoke switch counts too, not just the preset: the comp's
+    // karaoke path does not depend on the motion profile, so the stage has to light
+    // words as soon as karaoke is on rather than only for the karaoke cards.
+    var karaoke = !!(settings && settings.karaoke) ||
+                  !!(preset && (preset.karaoke || preset.forceKaraoke));
     label.className = "pv-text" + (karaoke ? " pv-karaoke-words" : "");
     return label;
   }
@@ -71,7 +75,7 @@
    */
   function buildCaptionLine(preset, settings, text, words) {
     var label = document.createElement("span");
-    withKaraokeMarker(label, preset);
+    withKaraokeMarker(label, preset, settings);
 
     var wordTexts = null;
     var i;
@@ -83,7 +87,10 @@
       wordTexts = preset.previewWords.slice(0);
     }
 
-    var perWord = !!(preset && (preset.karaoke || (preset.previewWords && preset.previewWords.length)));
+  // Word by word needs one span per word, exactly as the comp builds one layer per
+  // word - so the setting decides this, not only the preset.
+  var perWord = !!(settings && (settings.karaoke || settings.wordByWord)) ||
+                !!(preset && (preset.karaoke || (preset.previewWords && preset.previewWords.length)));
 
     if (perWord && wordTexts && wordTexts.length) {
       var step = 0.6;
@@ -750,11 +757,20 @@
 
     var anchor = document.createElement("div");
     anchor.className = "stage-anchor";
-    anchor.appendChild(buildCaptionLine(
-      preset, null,
-      opts.caption ? opts.caption.text : "",
-      opts.caption ? opts.caption.words : null
-    ));
+
+    var captionText = opts.caption ? opts.caption.text : "";
+    var captionWords = opts.caption ? opts.caption.words : null;
+
+    // Word by word puts one word on screen at a time in the comp, where every word
+    // is its own layer, so the stage shows one word rather than the whole line.
+    // Karaoke keeps the phrase and lights the spoken word, so nothing is dropped.
+    if (settings && settings.wordByWord && !settings.karaoke &&
+        captionWords && captionWords.length) {
+      captionWords = [captionWords[0]];
+      captionText = captionWords[0].text || captionText;
+    }
+
+    anchor.appendChild(buildCaptionLine(preset, settings, captionText, captionWords));
 
     frame.appendChild(anchor);
     stage.appendChild(frame);

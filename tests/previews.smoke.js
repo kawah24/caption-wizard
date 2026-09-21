@@ -16,7 +16,7 @@ var fontsSource = fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js
 // Both halves matter: the slice used to stop before applyStageSettings, so the
 // function that draws the background bar was never executed by this suite - and a
 // missing variable in it emptied the preview for Shorts Bar with every test green.
-var stageSource = source.slice(source.indexOf("function buildStage"),
+var stageSource = source.slice(source.indexOf("function withKaraokeMarker"),
                                source.indexOf("function applyStageSettings")) +
                   source.slice(source.indexOf("function applyStageSettings"));
 
@@ -36,9 +36,45 @@ var FONT_RESPONSE = {
   ]
 };
 
+function stubElement(tag) {
+  var el = {
+    tagName: tag || "div",
+    className: "",
+    style: {},
+    textContent: "",
+    children: [],
+    attrs: {},
+    setAttribute: function (k, v) { el.attrs[k] = v; },
+    getAttribute: function (k) { return el.attrs[k] === undefined ? null : el.attrs[k]; },
+    appendChild: function (c) { el.children.push(c); return c; },
+    removeChild: function (c) { return c; },
+    getElementsByClassName: function (name) {
+      var found = [];
+      (function walk(node) {
+        for (var i = 0; i < (node.children || []).length; i++) {
+          var child = node.children[i];
+          if (String(child.className).split(/\s+/).indexOf(name) >= 0) found.push(child);
+          walk(child);
+        }
+      })(el);
+      return found;
+    },
+    querySelector: function () { return null; },
+    addEventListener: function () {},
+    classList: { add: function () {}, remove: function () {}, toggle: function () {}, contains: function () { return false; } }
+  };
+  el.style.setProperty = function (k, v) { el.style[k] = v; };
+  el.style.getPropertyValue = function (k) { return el.style[k] === undefined ? "" : el.style[k]; };
+  el.style.removeProperty = function (k) { delete el.style[k]; };
+  return el;
+}
+
 var sandbox = {
   document: {
-    createElement: function () { return {}; }   // no canvas -> fontAvailable() returns true
+    // No getContext anywhere, so fontAvailable() keeps returning true, as the
+    // existing font checks expect - but real enough to build a stage with.
+    createElement: function (tag) { return stubElement(tag); },
+    createTextNode: function (text) { return { nodeType: 3, textContent: String(text) }; }
   }
 };
 sandbox.window = sandbox;
@@ -374,7 +410,17 @@ function fakeElement(cls) {
     removeAttribute: function (k) { delete el.attrs[k]; },
     appendChild: function (child) { el.children.push(child); return child; },
     removeChild: function (child) { return child; },
-    getElementsByClassName: function () { return []; },
+    getElementsByClassName: function (name) {
+      var found = [];
+      (function walk(node) {
+        for (var i = 0; i < (node.children || []).length; i++) {
+          var child = node.children[i];
+          if (String(child.className).split(/\s+/).indexOf(name) >= 0) found.push(child);
+          walk(child);
+        }
+      })(el);
+      return found;
+    },
     querySelector: function () { return null; },
     addEventListener: function () {},
     classList: {
@@ -428,6 +474,51 @@ check("and cleared again when the style has no bar",
     P.applyStageSettings(f.stage, { motion: "popIn" }, settingsFor({ defaults: {} }, false), {});
     return f.anchor.style.background === "" && f.anchor.style.padding === "";
   })());
+console.log("");
+console.log("the stage shows what the comp would build");
+
+function stageLabel(settings, words) {
+  var preset = { id: "probe", name: "probe", motion: "popIn", previewLine: "sample line" };
+  var s = P.buildStage(preset, settings, {
+    disableMedia: true,
+    compWidth: 1080, compHeight: 1920,
+    caption: { text: "Dolly writes now", words: words }
+  });
+  var anchor = s.getElementsByClassName("stage-anchor")[0];
+  return anchor ? anchor.children[0] : null;
+}
+
+function spanCount(label) {
+  var n = 0;
+  for (var i = 0; i < (label.children || []).length; i++) {
+    if (label.children[i].className === "pv-word") n++;
+  }
+  return n;
+}
+
+var words = [{ text: "Dolly" }, { text: "writes" }, { text: "now" }];
+
+var plain = stageLabel({ karaoke: false, wordByWord: false }, words);
+check("a plain caption draws the whole line", /Dolly writes now/.test(plain.textContent),
+  JSON.stringify(plain.textContent));
+
+var karaokeLabel = stageLabel({ karaoke: true, wordByWord: false }, words);
+check("karaoke marks the line so words are lit",
+  /pv-karaoke-words/.test(karaokeLabel.className), JSON.stringify(karaokeLabel.className));
+check("karaoke keeps every word, so the phrase stays readable",
+  spanCount(karaokeLabel) === 3, "spans: " + spanCount(karaokeLabel));
+
+var wordLabel = stageLabel({ karaoke: false, wordByWord: true }, words);
+check("word by word shows one word, as the comp does",
+  spanCount(wordLabel) === 1, "spans: " + spanCount(wordLabel));
+check("and it is the first word of the caption",
+  wordLabel.children.length === 1 && /Dolly/.test(wordLabel.children[0].textContent),
+  JSON.stringify(wordLabel.children.map(function (c) { return c.textContent; })));
+
+var bothLabel = stageLabel({ karaoke: true, wordByWord: true }, words);
+check("karaoke wins when both are on, since the phrase is the karaoke look",
+  spanCount(bothLabel) === 3 && /pv-karaoke-words/.test(bothLabel.className),
+  "spans: " + spanCount(bothLabel));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

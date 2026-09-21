@@ -783,9 +783,10 @@ var hostCan = {
   color: /fillColor/.test(hostSource),
   filter: /ADBE Gaussian Blur 2/.test(hostSource) && /ADBE Brightness & Contrast 2/.test(hostSource)
 };
-var acceptedGaps = {
-  "letter-spacing": "Cinematic's tracking stays static in the comp; its drift is scale"
-};
+// Empty on purpose. It held letter-spacing, excusing Cinematic's tracking as static
+// in the comp - but the preview never varied it either, so there was nothing to
+// excuse. Anything animated from here on has to be reproduced by the host.
+var acceptedGaps = {};
 var animatedProps = {};
 var frameRe = /@keyframes (lcp\w+) \{([\s\S]*?)\n\}/g;
 var frame;
