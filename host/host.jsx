@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.3.1"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.3.2"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.3.1";
+var LCP_VERSION = "1.3.2";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -1170,12 +1170,17 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
   var textY = baseY - offset.y;
 
   if (!_lcpLastPlacement) {
+    var fontSetting = lcp_num(style.fontSize, 72);
     _lcpLastPlacement = {
       posY: lcp_num(style.posY, 78),
       compHeight: comp.height,
       anchorY: baseY,
       textOffsetY: offset.y,
-      layerY: textY
+      layerY: textY,
+      fontSetting: fontSetting,
+      fontDrawnPx: fontSetting * (comp.width > 0 ? (comp.width / 1920) : 1),
+      compWidth: comp.width,
+      fontFace: lcp_resolvePostScriptName(style.fontFamily, style.bold)
     };
   }
 
@@ -1313,6 +1318,10 @@ function lcp_create(payloadJson) {
       ',"anchorY":' + p.anchorY +
       ',"textOffsetY":' + p.textOffsetY +
       ',"layerY":' + p.layerY +
+      ',"fontSetting":' + p.fontSetting +
+      ',"fontDrawnPx":' + p.fontDrawnPx +
+      ',"compWidth":' + p.compWidth +
+      ',"fontFace":"' + lcp_esc(p.fontFace) + '"' +
       ',"fraction":' + (p.compHeight > 0 ? (p.anchorY / p.compHeight) : 0) + "}";
   }
 

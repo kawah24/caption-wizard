@@ -643,6 +643,14 @@
           message += " - does not match the Vertical setting";
         }
         message += ".";
+        // The caption's own size in the comp, next to the preview's note, so the
+        // two proportions can be compared as numbers rather than by eye.
+        if (place.compWidth > 0) {
+          message += "\nComp caption: " + (place.fontFace || "?") + " at " +
+                     Math.round(place.fontDrawnPx) + "px in a " + place.compWidth + "px comp (" +
+                     (place.fontDrawnPx / place.compWidth * 100).toFixed(1) + "% of the width), from a " +
+                     Math.round(place.fontSetting) + "px setting.";
+        }
       }
       if (result.warnings && result.warnings.length) {
         message += "\n" + result.warnings.join("\n");

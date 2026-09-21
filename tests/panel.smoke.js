@@ -157,6 +157,10 @@ check("the note explains that the share is what matches",
   /same share of the frame as the comp/.test(js));
 
 console.log("");
+check("the status names the comp caption's size",
+  /Comp caption: /.test(js) && /place\.fontDrawnPx/.test(js) && /place\.fontFace/.test(js));
+check("it gives that size as a share of the comp width",
+  /place\.fontDrawnPx \/ place\.compWidth \* 100/.test(js));
 console.log("the panel reports what the host actually did");
 
 check("the generate message says where the caption was placed",

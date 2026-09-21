@@ -12,6 +12,12 @@ var fs = require("fs");
 var path = require("path");
 var vm = require("vm");
 
+var previewModule = { document: { createElement: function () { return {}; } } };
+previewModule.window = previewModule;
+vm.createContext(previewModule);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8"), previewModule);
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8"), previewModule);
+var lcpPreview = previewModule.LcpPreviews;
 var hostPath = path.join(__dirname, "..", "host", "host.jsx");
 var sandbox = { app: null };
 vm.createContext(sandbox);
@@ -549,6 +555,22 @@ check("the layer position is that offset away from the requested position",
   Math.abs(placed.placement.layerY - (1080 * 0.78 + 10)) < 0.001, String(placed.placement.layerY));
 check("the reported comp height is the comp's own",
   placed.placement.compHeight === 1080, String(placed.placement.compHeight));
+check("the reported comp size follows the authoring scale",
+  Math.abs(placed.placement.fontDrawnPx - placed.placement.fontSetting * (placed.placement.compWidth / 1920)) < 0.001,
+  placed.placement.fontDrawnPx + " vs " + (placed.placement.fontSetting * placed.placement.compWidth / 1920));
+check("it names the font face it asked After Effects for",
+  typeof placed.placement.fontFace === "string" && placed.placement.fontFace.length > 0,
+  String(placed.placement.fontFace));
+
+// The invariant that matters: whatever the frame size, the caption takes the same
+// share of it in the preview as in the comp. This is the comparison the panel now
+// prints as numbers, so it is asserted here rather than left to the eye.
+var compShare = (150 * (1080 / 1920)) / 1080;
+var previewShare = (150 * lcpPreview.sizeFactor(236)) / 236;
+check("preview and comp draw the caption at the same share of the frame",
+  Math.abs(compShare - previewShare) < 1e-12, compShare + " vs " + previewShare);
+check("a portrait comp previews at 236px wide at the current cap",
+  Math.round(420 * 1080 / 1920) === 236, String(Math.round(420 * 1080 / 1920)));
 
 sandbox.app = {
   project: { activeItem: placedComp },
@@ -626,12 +648,7 @@ check("a glow backdrop is created", glowResult.backdrops > 0, String(glowResult.
 
 // The comp's halo has to reach as far as the preview's, or the panel promises a
 // glow that After Effects does not draw. Both use 0.20 + 0.80x the text size.
-var previewModule = { document: { createElement: function () { return {}; } } };
-previewModule.window = previewModule;
-vm.createContext(previewModule);
-vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8"), previewModule);
-vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8"), previewModule);
-var lcpPreview = previewModule.LcpPreviews;
+
 
 var glowFontPx = 80 * (1080 / 1920);
 var previewFar = lcpPreview.glowRadii(glowFontPx, 40).far;
