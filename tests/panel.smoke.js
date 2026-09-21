@@ -142,6 +142,20 @@ check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
 console.log("");
+console.log("");
+console.log("saved styles sit in their own section");
+
+check("the grid builds a Custom heading", /heading\.textContent = "Custom"/.test(js));
+check("only when there are saved styles",
+  (function () {
+    var guard = js.indexOf("if (state.customStyles.length) {");
+    var heading = js.indexOf('heading.textContent = "Custom"');
+    return guard > 0 && heading > guard;
+  })(),
+  "an empty section would be clutter");
+check("the heading spans the grid rather than filling a cell",
+  /\.grid-section\s*\{[\s\S]{0,80}grid-column: 1 \/ -1;/.test(
+    fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8")));
 console.log("saved styles");
 
 check("the panel persists the session under named keys",

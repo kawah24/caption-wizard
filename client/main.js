@@ -402,7 +402,16 @@
       })(presets[i]);
     }
 
-    // Saved styles come after the built-ins, so the shipped order stays put.
+    // Saved styles get a section of their own, so the shipped order stays put and
+    // it is obvious which cards are yours.
+    if (state.customStyles.length) {
+      var heading = doc.createElement("div");
+      heading.className = "grid-section";
+      heading.textContent = "Custom";
+      grid.appendChild(heading);
+    }
+
+    // Saved styles come after the built-ins.
     // They borrow the motion of the style they were built from and keep their own
     // settings, which the editor then works on directly.
     for (var c = 0; c < state.customStyles.length; c++) {

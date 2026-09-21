@@ -712,3 +712,14 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
 }
 
 .style-card-remove:hover { color: #fff; border-color: #a33; background: rgba(120, 0, 0, 0.8); }
+/* A heading inside the style grid spans it rather than filling a cell. */
+.grid-section {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
