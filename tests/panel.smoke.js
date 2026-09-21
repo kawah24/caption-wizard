@@ -386,6 +386,10 @@ check("choosing a shipped card clears whatever that card had",
 check("the saved styles still come back, since they are the user's own",
   /storeJSON\(STORE_KEYS\.custom, state\.customStyles\)/.test(js) &&
   /state\.customStyles = readJSON\(STORE_KEYS\.custom, \[\]\)/.test(js));
+check('a saved style stores its whole look, not just what was touched',
+  /resolveSettings\(base, state\.overrides\[state\.presetId\] \|\| \{\}\)/.test(js),
+  'saving the touched values alone let the base card decide how the saved style looked');
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

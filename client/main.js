@@ -578,7 +578,13 @@
       return false;
     }
 
-    state.customStyles.push({ name: name, base: state.presetId, overrides: state.overrides[state.presetId] || {} });
+    // The whole of the style as it looks now, not only the values that were touched.
+      // Saving the touched values meant the saved style inherited everything else from
+      // whichever card happened to be selected at that moment - so a saved style could
+      // come back looking like a completely different card.
+      var base = baseIdFor(state.presetId);
+      var effective = root.LcpPresets.resolveSettings(base, state.overrides[state.presetId] || {});
+      state.customStyles.push({ name: name, base: base, overrides: effective });
     state.overrides[name] = state.customStyles[state.customStyles.length - 1].overrides;
     state.presetId = name;
     saveSession();
