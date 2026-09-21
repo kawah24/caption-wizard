@@ -647,6 +647,20 @@
       root.requestAnimationFrame(function () { applyCardStyle(frame, preset); });
     }
 
+    // Saved styles can carry a small delete control; the built-ins cannot.
+    if (typeof options.onRemove === "function") {
+      var remove = document.createElement("button");
+      remove.className = "style-card-remove";
+      remove.type = "button";
+      remove.textContent = "\u00d7";
+      remove.title = "Delete this saved style";
+      remove.onclick = function (event) {
+        if (event && event.stopPropagation) event.stopPropagation();
+        options.onRemove(options.removeId);
+      };
+      card.appendChild(remove);
+    }
+
     if (typeof options.onSelect === "function") {
       card.onclick = function () { options.onSelect(preset.id); };
     }

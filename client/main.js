@@ -24,6 +24,7 @@
     asr: { cues: null, srt: "", language: null },   // cues produced by the local transcriber
     audio: { path: null, python: null, models: [], ready: false },
     generatedFingerprint: null,   // settings the comp's layers were built from
+    customStyles: [],             // { name, base, overrides } saved by the user
     job: null
   };
 
@@ -88,7 +89,7 @@
   /* ------------------------------------------------------------------ */
 
   function currentSettings() {
-    return root.LcpPresets.resolveSettings(state.presetId, state.overrides[state.presetId] || {});
+    return root.LcpPresets.resolveSettings(baseIdFor(state.presetId), state.overrides[state.presetId] || {});
   }
 
   function currentTiming() {
@@ -282,7 +283,7 @@
    */
   function refreshSelectedPreview() {
     var settings = currentSettings();
-    var preset = root.LcpPresets.getPreset(state.presetId);
+    var preset = activePreset();
 
     var stage = el.stageContainer.firstChild;
     if (stage) {
@@ -315,7 +316,7 @@
     // the scale it was given while it had no width at all - and a stage built on
     // a hidden tab has none, which is why the preview looked wrong until a
     // setting was touched.
-    root.LcpPreviews.applyStageSettings(stage, root.LcpPresets.getPreset(state.presetId),
+    root.LcpPreviews.applyStageSettings(stage, activePreset(),
       currentSettings(), { compWidth: comp.width, compHeight: comp.height });
   }
 
@@ -336,7 +337,7 @@
   /** Rebuild the large preview stage for the selected style. */
   function renderStage() {
     if (!el.stageContainer) return;
-    var preset = root.LcpPresets.getPreset(state.presetId);
+    var preset = activePreset();
     var comp = currentCompSize();
     var caption = captionForPreview();
 
@@ -366,7 +367,7 @@
     var text = caption ? caption.text : "";
     if (stage.getAttribute("data-caption") === text) return;
 
-    var preset = root.LcpPresets.getPreset(state.presetId);
+    var preset = activePreset();
     var comp = currentCompSize();
     root.LcpPreviews.setStageCaption(stage, preset, currentSettings(), caption, {
       compWidth: comp.width,
@@ -395,9 +396,45 @@
             renderStyleGrid();
             renderStage();
             renderSettings();
+            saveSession();
           }
         }));
       })(presets[i]);
+    }
+
+    // Saved styles come after the built-ins, so the shipped order stays put.
+    // They borrow the motion of the style they were built from and keep their own
+    // settings, which the editor then works on directly.
+    for (var c = 0; c < state.customStyles.length; c++) {
+      (function (entry) {
+        var base = root.LcpPresets.getPreset(entry.base);
+        var custom = {
+          id: entry.name,
+          name: entry.name,
+          blurb: "Your style, built on " + (base ? base.name : entry.base),
+          motion: base ? base.motion : "none",
+          karaoke: !!(base && base.karaoke),
+          previewWords: base ? base.previewWords : null,
+          previewLine: base ? base.previewLine : entry.name,
+          controls: (base ? base.controls : ["fontSize"]).slice(0),
+          defaults: {},
+          custom: true
+        };
+        grid.appendChild(root.LcpPreviews.buildCard(custom, {
+          selected: entry.name === state.presetId,
+          removeId: entry.name,
+          onRemove: deleteCustomStyle,
+          onSelect: function (id) {
+            state.presetId = id;
+            var saved = customStyleEntry(id);
+            if (saved) state.overrides[id] = saved.overrides || {};
+            renderStyleGrid();
+            renderStage();
+            renderSettings();
+            saveSession();
+          }
+        }));
+      })(state.customStyles[c]);
     }
   }
 
@@ -406,8 +443,118 @@
    * `overrides[presetId]` holding only what the user changed, so clearing it
    * restores the shipped values without touching any other preset.
    */
+  var STORE_KEYS = {
+    overrides: "lcp.overrides",
+    selection: "lcp.presetId",
+    custom: "lcp.customStyles"
+  };
+
+  function storeJSON(key, value) {
+    try { root.localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode etc */ }
+  }
+
+  function readJSON(key, fallback) {
+    try {
+      var raw = root.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (err) {
+      return fallback;
+    }
+  }
+
+  /**
+   * Persist the panel's editing session: the per-style overrides, the selected
+   * style and the saved styles. Called after every change, so a reopened panel
+   * is where the user left it.
+   */
+  function saveSession() {
+    storeJSON(STORE_KEYS.overrides, state.overrides);
+    storeJSON(STORE_KEYS.selection, state.presetId);
+    storeJSON(STORE_KEYS.custom, state.customStyles);
+  }
+
+  /**
+   * Restore a saved session. A selection that is neither a built-in nor a saved
+   * style falls back to the default.
+   */
+  function loadSession() {
+    var overrides = readJSON(STORE_KEYS.overrides, null);
+    if (overrides && typeof overrides === "object") state.overrides = overrides;
+
+    state.customStyles = readJSON(STORE_KEYS.custom, []) || [];
+    if (!(state.customStyles instanceof Array)) state.customStyles = [];
+
+    var selection = readJSON(STORE_KEYS.selection, state.presetId);
+    var known = root.LcpPresets.getPreset(selection) ||
+      state.customStyles.some(function (s) { return s.name === selection; });
+    if (known && typeof selection === "string") state.presetId = selection;
+  }
+
+  /**
+   * Which built-in style a selection resolves through.
+   *
+   * A saved style keeps its own settings but borrows the motion and defaults of the
+   * style it was built from. getPreset() cannot tell a saved name from a typo - it
+   * falls back to the first preset - so nothing may ask it directly.
+   */
+  function baseIdFor(id) {
+    var entry = customStyleEntry(id);
+    return entry ? entry.base : id;
+  }
+
+  /** The preset behind the current selection, saved or built-in. */
+  function activePreset() {
+    return root.LcpPresets.getPreset(baseIdFor(state.presetId));
+  }
+
+  /** A saved style's settings, as the grid and the editor see them. */
+  function customStyleEntry(id) {
+    for (var i = 0; i < state.customStyles.length; i++) {
+      if (state.customStyles[i].name === id) return state.customStyles[i];
+    }
+    return null;
+  }
+
+  /**
+   * Save the current style's settings under a name.
+   *
+   * The saved style keeps the motion of the style it was built from - so it still
+   * previews and generates like that one - and its own overrides, which the editor
+   * then works on directly.
+   */
+  function saveCustomStyle(name) {
+    name = String(name === undefined || name === null ? "" : name).replace(/^\s+|\s+$/g, "");
+    if (!name) { setStatus("Name the style before saving.", "error"); return false; }
+    var builtIn = root.LcpPresets.PRESETS.some(function (p) { return p.id === name; });
+    if (builtIn || customStyleEntry(name)) {
+      setStatus('"' + name + '" already exists - choose another name.', "error");
+      return false;
+    }
+
+    state.customStyles.push({ name: name, base: state.presetId, overrides: state.overrides[state.presetId] || {} });
+    state.overrides[name] = state.customStyles[state.customStyles.length - 1].overrides;
+    state.presetId = name;
+    saveSession();
+    renderStyleGrid();
+    renderStage();
+    renderSettings();
+    setStatus('Saved "' + name + '". It is in the style grid, marked custom.', "ok");
+    return true;
+  }
+
+  function deleteCustomStyle(id) {
+    state.customStyles = state.customStyles.filter(function (s) { return s.name !== id; });
+    delete state.overrides[id];
+    state.presetId = "karaoke";
+    saveSession();
+    renderStyleGrid();
+    renderStage();
+    renderSettings();
+    setStatus('Removed "' + id + '".', "ok");
+  }
+
   function resetStyle() {
-    var preset = root.LcpPresets.getPreset(state.presetId);
+    var preset = activePreset();
 
     if (!state.overrides[state.presetId] ||
         !Object.keys(state.overrides[state.presetId]).length) {
@@ -418,6 +565,7 @@
     var changed = Object.keys(state.overrides[state.presetId]).length;
     state.overrides[state.presetId] = {};
 
+    saveSession();
     renderSettings();
     renderStage();
     updateFontStatus();
@@ -439,6 +587,8 @@
     // Max words changes which caption is representative, so the stage has to
     // pick again - restyling alone left it showing a caption from the old limit.
     updateStats();
+
+    saveSession();
   }
 
   function renderSettings() {
@@ -504,7 +654,7 @@
 
   function updateFontStatus() {
     if (!el.stageNote) return;
-    var preset = root.LcpPresets.getPreset(state.presetId);
+    var preset = activePreset();
     var settings = currentSettings();
     var comp = currentCompSize();
 
@@ -1086,6 +1236,8 @@
     el.clearGeneratedBtn = byId("clearGeneratedBtn");
     el.generateArea = byId("generateArea");
     el.replacePrevious = byId("replacePrevious");
+    el.saveStyleBtn = byId("saveStyleBtn");
+    el.customStyleName = byId("customStyleName");
     el.status = byId("status");
     el.cepBanner = byId("cepBanner");
     el.srtFile = byId("srtFile");
@@ -1131,6 +1283,8 @@
       refreshCompInfo();
     };
 
+    loadSession();
+
     renderStyleGrid();
     renderStage();
     renderSettings();
@@ -1148,6 +1302,19 @@
       var target = event.target || event.srcElement;
       var tab = target.getAttribute && target.getAttribute("data-tab");
       if (tab) showTab(tab);
+    };
+
+    // Named styles: save the current settings under a name, get a card that
+    // selects them, and a small delete control on the card.
+    el.saveStyleBtn.onclick = function () {
+      if (!saveCustomStyle(el.customStyleName.value)) return;
+      el.customStyleName.value = "";
+    };
+    el.customStyleName.onkeydown = function (event) {
+      if (event && (event.key === "Enter" || event.keyCode === 13)) {
+        if (!saveCustomStyle(el.customStyleName.value)) return;
+        el.customStyleName.value = "";
+      }
     };
 
     byId("loadSrtBtn").onclick = function () { el.srtFile.click(); };
@@ -1175,6 +1342,17 @@
     el.resetStyleBtn.onclick = resetStyle;
 
     refresh();
+
+    // A seam for the headless checks: the storage round-trip is not reachable
+    // through the UI without gestures a test cannot make.
+    root.LcpPanel = {
+      state: state,
+      saveSession: saveSession,
+      loadSession: loadSession,
+      saveCustomStyle: saveCustomStyle,
+      deleteCustomStyle: deleteCustomStyle,
+      customStyles: function () { return state.customStyles; }
+    };
   }
 
   if (doc.readyState === "loading") {

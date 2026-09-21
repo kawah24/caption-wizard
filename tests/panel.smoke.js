@@ -141,6 +141,35 @@ check("it never touches the chosen audio path", focusHandler.indexOf("useCompMed
 check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
+console.log("");
+console.log("saved styles");
+
+check("the panel persists the session under named keys",
+  /lcp\.overrides/.test(js) && /lcp\.presetId/.test(js) && /lcp\.customStyles/.test(js));
+check("it restores before the grid is built, inside init",
+  (function () {
+    var initAt = js.indexOf("function init()");
+    if (initAt < 0) return false;
+    var body = js.slice(initAt);
+    var load = body.indexOf("loadSession();");
+    var grid = body.indexOf("renderStyleGrid();");
+    return load > 0 && grid > 0 && load < grid;
+  })(),
+  "restoring after the grid would show the wrong selection");
+check("every edit is saved as it happens",
+  (function () {
+    var onSetting = js.indexOf("function onSettingChanged");
+    var save = js.indexOf("saveSession();", onSetting);
+    var end = js.indexOf("function ", onSetting + 10);
+    return save > onSetting && save < end;
+  })());
+check("a name is required, and duplicates are refused",
+  /Name the style before saving/.test(js) && /already exists/.test(js));
+check("saved styles can be deleted", /function deleteCustomStyle/.test(js));
+check("the grid offers a way to save and to name",
+  /id="saveStyleBtn"/.test(html) && /id="customStyleName"/.test(html));
+check("the storage helpers guard against a hostile localStorage",
+  /catch \(err\) \{ \/\* private mode etc \*\/ \}/.test(js));
 check("switching to the style tab re-fits the stage",
   /if \(tabId === "style"\) \{\s*resizeStage\(\);/.test(js));
 check("re-fitting also re-applies the caption's scale",
