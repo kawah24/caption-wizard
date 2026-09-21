@@ -177,6 +177,11 @@ check("no settings at all does not throw",
 check("the live stage places captions with it",
   /captionPlacement\(settings\)/.test(source) &&
   /anchor\.style\.transform = spot\.transform/.test(source));
+check("the preview draws the outline outside, via paint-order",
+  /paintOrder = "stroke fill"/.test(source) &&
+  /label\.style\.paintOrder = ""/.test(source));
+check("the stroke rule is width times factor, with no floor",
+  /function strokePx[\s\S]{0,320}return Math\.max\(0, width \* factor\);/.test(source));
 check("the cards are centred by the stylesheet, not by script",
   !/label\.style\.(position|left|top|transform)\s*=/.test(source));
 check("the stylesheet centres a card's caption",

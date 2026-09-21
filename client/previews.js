@@ -467,9 +467,16 @@
     }
 
     if (settings.applyStroke || settings.filled === false) {
+      // -webkit-text-stroke paints the stroke centred on the glyph edge AND over
+      // the fill, so half of it eats into the letter and makes the text look
+      // bolder. The host sets strokeOverFill=false, which is After Effects' "Fill
+      // Over Stroke" - the fill covers the inner half, so the outline reads as
+      // sitting outside. paint-order does the same thing here.
+      label.style.paintOrder = "stroke fill";
       label.style.webkitTextStroke = strokePx(settings.strokeWidth, factor).toFixed(2) + "px " +
         (settings.strokeColor || "#000000");
     } else {
+      label.style.paintOrder = "";
       label.style.webkitTextStroke = "0";
     }
 
