@@ -813,7 +813,11 @@
     // Sizes are authored against a 1920px-wide comp, exactly as the host does,
     // so the caption takes the same share of the frame as it will in After
     // Effects - on any comp size, not only a 1920-wide one.
-    applyTextStyle(label, preset, settings, sizeFactor(stage.clientWidth));
+    // Kept in a variable: the background bar below needs the same factor, and
+    // referring to a bare `factor` here threw a ReferenceError that emptied the
+    // stage - but only for styles with a bar, which is why only Shorts Bar broke.
+    var factor = sizeFactor(stage.clientWidth);
+    applyTextStyle(label, preset, settings, factor);
 
     anchor.style.left = (settings.posX === undefined ? 50 : settings.posX) + "%";
     anchor.style.top = (settings.posY === undefined ? 78 : settings.posY) + "%";

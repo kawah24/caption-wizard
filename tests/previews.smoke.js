@@ -13,7 +13,12 @@ var vm = require("vm");
 
 var source = fs.readFileSync(path.join(__dirname, "..", "client", "previews.js"), "utf8");
 var fontsSource = fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8");
-var stageSource = source.slice(source.indexOf("function buildStage"), source.indexOf("function applyStageSettings"));
+// Both halves matter: the slice used to stop before applyStageSettings, so the
+// function that draws the background bar was never executed by this suite - and a
+// missing variable in it emptied the preview for Shorts Bar with every test green.
+var stageSource = source.slice(source.indexOf("function buildStage"),
+                               source.indexOf("function applyStageSettings")) +
+                  source.slice(source.indexOf("function applyStageSettings"));
 
 // The real font list, as After Effects would report it. Notably without Anton,
 // so the fallback can be exercised.
@@ -334,6 +339,95 @@ var installedAnton = P.resolvePreviewFont("Arial-BoldMT");
 check("an installed font is not swapped out", installedAnton.family !== "Arial" ? false : installedAnton.ok === true);
 
 console.log("");
+console.log("");
+console.log("every style draws its stage, including the bar");
+
+// This suite never loaded the preset table; bind it, because the styles are what
+// decide which drawing paths exist - the background bar only exists for some.
+var presetsSource = fs.readFileSync(path.join(__dirname, "..", "client", "presets.js"), "utf8");
+vm.runInContext(presetsSource, sandbox);
+var PRESETS = sandbox.LcpPresets.PRESETS;
+var BASE_DEFAULTS = sandbox.LcpPresets.BASE_DEFAULTS;
+
+// Enough of an element for the drawing code: applyTextStyle sets attributes and
+// class names, and the bar path reads and writes styles.
+// The karaoke styles set a CSS variable for the highlight, so style needs the
+// property methods, not just the camelCase fields.
+function fakeStyle() {
+  var s = {};
+  s.setProperty = function (k, v) { s[k] = v; };
+  s.getPropertyValue = function (k) { return s[k] === undefined ? "" : s[k]; };
+  s.removeProperty = function (k) { delete s[k]; };
+  return s;
+}
+
+function fakeElement(cls) {
+  var el = {
+    className: cls || "",
+    style: fakeStyle(),
+    textContent: "",
+    innerHTML: "",
+    children: [],
+    attrs: {},
+    setAttribute: function (k, v) { el.attrs[k] = v; },
+    getAttribute: function (k) { return el.attrs[k] === undefined ? null : el.attrs[k]; },
+    removeAttribute: function (k) { delete el.attrs[k]; },
+    appendChild: function (child) { el.children.push(child); return child; },
+    removeChild: function (child) { return child; },
+    getElementsByClassName: function () { return []; },
+    querySelector: function () { return null; },
+    addEventListener: function () {},
+    classList: {
+      add: function () {}, remove: function () {},
+      toggle: function () {}, contains: function () { return false; }
+    }
+  };
+  return el;
+}
+
+function fakeStage() {
+  var frame = fakeElement("pv");
+  var anchor = fakeElement("stage-anchor");
+  var label = fakeElement("pv-text");
+  var map = { "pv": frame, "stage-anchor": anchor, "pv-text": label };
+  var stage = { clientWidth: 236 };
+  stage.getElementsByClassName = function (name) { return map[name] ? [map[name]] : []; };
+  return { stage: stage, frame: frame, anchor: anchor, label: label };
+}
+
+function settingsFor(preset, boxOn) {
+  var out = {};
+  var key;
+  for (key in BASE_DEFAULTS) { if (BASE_DEFAULTS.hasOwnProperty(key)) out[key] = BASE_DEFAULTS[key]; }
+  var defaults = (preset && preset.defaults) || {};
+  for (key in defaults) { if (defaults.hasOwnProperty(key)) out[key] = defaults[key]; }
+  if (boxOn) out.applyBox = true;
+  return out;
+}
+
+var threw = [];
+PRESETS.forEach(function (preset) {
+  var f = fakeStage();
+  try {
+    P.applyStageSettings(f.stage, preset, settingsFor(preset, true), {});
+  } catch (err) {
+    threw.push(preset.name + " (" + err.message + ")");
+  }
+});
+check("every style draws its stage with a bar, without throwing",
+  threw.length === 0, threw.join(" | "));
+
+var bar = fakeStage();
+P.applyStageSettings(bar.stage, { motion: "popIn" },
+  settingsFor({ defaults: { applyBox: true, boxPadding: 24, boxOpacity: 80, boxColor: "#101010" } }, true), {});
+check("the bar is actually drawn", !!(bar.anchor.style.background && bar.anchor.style.padding),
+  "background=" + bar.anchor.style.background + " padding=" + bar.anchor.style.padding);
+check("and cleared again when the style has no bar",
+  (function () {
+    var f = fakeStage();
+    P.applyStageSettings(f.stage, { motion: "popIn" }, settingsFor({ defaults: {} }, false), {});
+    return f.anchor.style.background === "" && f.anchor.style.padding === "";
+  })());
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
