@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.19"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.20"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.19";
+var LCP_VERSION = "1.8.20";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -423,6 +423,7 @@ function lcp_addKaraokePhrase(comp, caption, style) {
   if (align === "center") cursor = anchorX - lineWidth / 2;
   else if (align === "right") cursor = anchorX - lineWidth;
 
+  var startX = cursor;
   for (i = 0; i < count; i++) {
     var x = cursor;
     lcp_animateKaraokeWord(layers[i], karaokeStyle, style, baseIn, baseOut, words[i], x, baseY);
@@ -434,7 +435,23 @@ function lcp_addKaraokePhrase(comp, caption, style) {
     cursor += widths[i] + spaceWidth;
   }
 
-  return { text: count, backdrops: backdrops, bars: 0 };
+  // One bar behind the whole phrase. The words are separate layers laid side by
+  // side, so the bar is measured from the line they form, not from one word.
+  var bars = 0;
+  if (style.applyBox && layers.length) {
+    var firstRect = lcp_measureCaption(layers[0]);
+    if (firstRect) {
+      var boxPad = lcp_num(style.boxPadding, 18);
+      var boxWidth = Math.max(4, lineWidth + boxPad * 2);
+      var boxHeight = Math.max(4, firstRect.height + boxPad * 2);
+      if (lcp_addBarLayer(comp, boxWidth, boxHeight, style, startX + lineWidth / 2, baseY,
+                          baseIn, baseOut, layers[0])) {
+        bars = 1;
+      }
+    }
+  }
+
+  return { text: count, backdrops: backdrops, bars: bars };
 }
 
 /** Colour highlight, optional pop, and the phrase's own fade for one word. */
@@ -830,6 +847,19 @@ function lcp_addBox(comp, textLayer, style) {
   var textX = lcp_num(style.posX, 50) / 100 * comp.width;
   var textY = lcp_num(style.posY, 78) / 100 * comp.height;
 
+  var centreX = textX + rect.left + rect.width / 2;
+  var centreY = textY;
+  return lcp_addBarLayer(comp, width, height, style, centreX, centreY,
+                         textLayer.inPoint, textLayer.outPoint, textLayer);
+}
+
+/**
+ * The bare bar layer itself: a solid, or a shape layer when a solid is refused.
+ *
+ * Split out of lcp_addBox so a karaoke phrase - which is several word layers laid
+ * side by side - can have one bar spanning the whole phrase.
+ */
+function lcp_addBarLayer(comp, width, height, style, centreX, centreY, inPoint, outPoint, afterLayer) {
   var bar = null;
   var how = "solid";
   try {
@@ -851,19 +881,14 @@ function lcp_addBox(comp, textLayer, style) {
   }
 
   try { bar.comment = LCP_TAG; } catch (e3) { /* tag is only needed for clear */ }
-  bar.inPoint = textLayer.inPoint;
-  bar.outPoint = textLayer.outPoint;
+  bar.inPoint = inPoint;
+  bar.outPoint = outPoint;
   bar.startTime = 0;
 
   try { bar.property("Opacity").setValue(lcp_num(style.boxOpacity, 70)); } catch (e4) { /* ignore */ }
 
-  // sourceRectAtTime is relative to the text layer's anchor point, and the text
-  // layer is itself positioned so its box is centred on the vertical position -
-  // so the bar's centre is that position exactly.
-  var centreX = textX + rect.left + rect.width / 2;
-  var centreY = textY;
   try { bar.property("Position").setValue([centreX, centreY]); } catch (e5) { /* ignore */ }
-  try { bar.moveAfter(textLayer); } catch (e6) { /* ignore */ }
+  if (afterLayer) { try { bar.moveAfter(afterLayer); } catch (e6) { /* ignore */ } }
 
   lcp_applyMotion(bar, style, comp, bar.inPoint, bar.outPoint, [centreX, centreY],
                   lcp_num(style.boxOpacity, 70) / 100);
@@ -1426,7 +1451,7 @@ function lcp_create(payloadJson) {
               lcp_num(word.startMs, caption.startMs) / 1000,
               lcp_num(word.endMs, caption.endMs) / 1000,
               wordStyle,
-              false   // a bar around a single word would box the word, not the line
+              true    // a boxed word: the line for that caption is the word
             );
             created += wordAdded.text;
             backdrops += wordAdded.backdrops;

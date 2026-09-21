@@ -967,6 +967,117 @@ var capText = capComp.allLayers().filter(function (l) { return !/Shape Layer|^ba
 check("a caption layer still reaches full opacity",
   !!capText && (capText._opacity || []).indexOf(100) >= 0,
   JSON.stringify(capText ? capText._opacity : null));
+
+console.log("");
+console.log("every card, through every feature, on both sides");
+
+// Bugs in this project have clustered in paths that only some styles reach - the
+// background bar, the karaoke highlight, the glow backdrop, the outline. So each of
+// the twenty cards is put through every feature rather than only its own defaults,
+// and both sides have to survive it: the host building layers, the preview drawing.
+var VARIANTS = [
+  { name: "as shipped",       over: {} },
+  { name: "outline",          over: { applyStroke: true, strokeColor: "#000000", strokeWidth: 26 } },
+  { name: "shadow",           over: { applyShadow: true, shadowAmount: 55 } },
+  { name: "glow",             over: { applyGlow: true, glowAmount: 40 } },
+  { name: "bar",              over: { applyBox: true, boxPadding: 24, boxOpacity: 80, boxColor: "#101010" } },
+  { name: "bar at 10pc",      over: { applyBox: true, boxPadding: 24, boxOpacity: 10, boxColor: "#ff8080" } },
+  { name: "karaoke",          over: { karaoke: true, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true } },
+  { name: "word by word",     over: { wordByWord: true } },
+  { name: "bold upper two",   over: { bold: true, transform: "uppercase", lines: "2" } },
+  { name: "outline only",     over: { filled: false, applyStroke: true, strokeWidth: 40 } },
+  { name: "align left",       over: { align: "left" } },
+  { name: "align right",      over: { align: "right" } },
+  { name: "corner placement", over: { posX: 20, posY: 30 } }
+];
+
+function fakeStage() {
+  function el(cls) {
+    var e = { className: cls || "", style: {}, textContent: "", attrs: {}, children: [] };
+    e.setAttribute = function (k, v) { e.attrs[k] = v; };
+    e.getAttribute = function (k) { return e.attrs[k] === undefined ? null : e.attrs[k]; };
+    e.appendChild = function (c) { e.children.push(c); return c; };
+    e.removeChild = function (c) { return c; };
+    e.getElementsByClassName = function () { return []; };
+    e.querySelector = function () { return null; };
+    e.addEventListener = function () {};
+    e.classList = { add: function () {}, remove: function () {}, toggle: function () {}, contains: function () { return false; } };
+    e.style.setProperty = function (k, v) { e.style[k] = v; };
+    e.style.getPropertyValue = function (k) { return e.style[k] === undefined ? "" : e.style[k]; };
+    e.style.removeProperty = function (k) { delete e.style[k]; };
+    return e;
+  }
+  var frame = el("pv"), anchor = el("stage-anchor"), label = el("pv-text");
+  var map = { "pv": frame, "stage-anchor": anchor, "pv-text": label };
+  var stage = { clientWidth: 234 };
+  stage.getElementsByClassName = function (n) { return map[n] ? [map[n]] : []; };
+  return { stage: stage, frame: frame, anchor: anchor, label: label };
+}
+
+var hostThrew = [];
+var previewThrew = [];
+var combos = 0;
+var barBuilt = 0, backdropBuilt = 0, wordLayers = 0;
+var askedForBar = 0;
+
+lcpPresets.PRESETS.forEach(function (preset) {
+  VARIANTS.forEach(function (variant) {
+    combos++;
+    var settings = lcpPresets.resolveSettings(preset.id, variant.over, lcpPresets.TIMING_DEFAULTS);
+    settings = JSON.parse(JSON.stringify(settings));
+
+    // the host side
+    try {
+      var comp = fakeCreateComp(1080, 1920, 10);
+      var res = runCreate(comp, [phrase("Dolly writes now", 0, 2000)], settings, true);
+      if (!res || res.ok !== true) hostThrew.push(preset.id + "/" + variant.name + ": " + JSON.stringify(res));
+      if (res.errors && res.errors.length) hostThrew.push(preset.id + "/" + variant.name + ": " + res.errors.join("; "));
+      if (settings.applyBox) {
+        askedForBar++;
+        var hasBar = comp.allLayers().some(function (l) { return l.name === "bar" || /Shape Layer/.test(l.name); });
+        if (hasBar) barBuilt++; else hostThrew.push(preset.id + "/" + variant.name + ": no bar was built");
+      }
+      if (settings.applyGlow) {
+        if (res.backdrops > 0) backdropBuilt++; else hostThrew.push(preset.id + "/" + variant.name + ": no glow backdrop");
+      }
+      if (settings.wordByWord || settings.karaoke) wordLayers++;
+    } catch (err) {
+      hostThrew.push(preset.id + "/" + variant.name + " threw: " + err.message);
+    }
+
+    // the preview side
+    try {
+      var s = fakeStage();
+      lcpPreview.applyStageSettings(s.stage, preset, settings, {});
+      if (!s.anchor.style.background && settings.applyBox) {
+        previewThrew.push(preset.id + "/" + variant.name + ": preview drew no bar");
+      }
+    } catch (err) {
+      previewThrew.push(preset.id + "/" + variant.name + " threw: " + err.message);
+    }
+  });
+});
+
+check("the matrix actually ran every card against every feature",
+  combos === lcpPresets.PRESETS.length * VARIANTS.length,
+  combos + " of " + (lcpPresets.PRESETS.length * VARIANTS.length));
+check("the host builds every card through every feature without failing",
+  hostThrew.length === 0, hostThrew.slice(0, 6).join(" | "));
+check("the preview draws every card through every feature without failing",
+  previewThrew.length === 0, previewThrew.slice(0, 6).join(" | "));
+// Counted rather than predicted: some cards ship with the bar already on, so a
+// hand-written expectation is wrong the moment a preset changes.
+check("a bar was built every single time one was asked for",
+  barBuilt === askedForBar && askedForBar > 0,
+  barBuilt + " built of " + askedForBar + " asked");
+
+// The bar's padding is a fraction of the text size on both sides, like every other
+// measured value: the preview scales by its frame, the host by the comp.
+var padPreview = 24 * previewFactor;
+var padComp = 24 * compFactor;
+check("the bar's padding is the same fraction of the text on both sides",
+  ratioGap(padPreview, padComp) < 1e-9,
+  padPreview.toFixed(3) + "px vs " + padComp.toFixed(3) + "px");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
