@@ -126,6 +126,18 @@
     offsetMs: 0
   };
 
+  /**
+   * One line per timing control, shown as a tooltip on its row.
+   *
+   * Stamped onto TIMING_DEFS below, the same way CONTROL_HELP is stamped onto
+   * CONTROL_DEFS - the timing controls were the only ones left without help.
+   */
+  var TIMING_HELP = {
+    wpm: "How fast the captions read, in words per minute. It lays out plain lines only - a cue with its own timecodes keeps them.",
+    gapMs: "The pause left between captions on plain lines. Cues with timecodes keep their own gaps instead.",
+    offsetMs: "Shifts every caption earlier or later. Set automatically to a comp layer's start time when the audio comes from that layer, so a clip that does not begin at zero lines up."
+  };
+
   /** Everything except the background bar, for clean minimal looks. */
   /**
    * One line per control, shown as a tooltip on its row.
@@ -177,6 +189,12 @@
   for (var helpKey in CONTROL_HELP) {
     if (CONTROL_HELP.hasOwnProperty(helpKey) && CONTROL_DEFS[helpKey]) {
       CONTROL_DEFS[helpKey].help = CONTROL_HELP[helpKey];
+    }
+  }
+
+  for (var timingHelpKey in TIMING_HELP) {
+    if (TIMING_HELP.hasOwnProperty(timingHelpKey) && TIMING_DEFS[timingHelpKey]) {
+      TIMING_DEFS[timingHelpKey].help = TIMING_HELP[timingHelpKey];
     }
   }
   var PLAIN_CONTROLS = [

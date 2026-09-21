@@ -200,6 +200,24 @@ check("every model in the list has a note, so a new one cannot ship silent",
   missing.length === 0, "no note for: " + missing.join(", "));
 check("the hint is updated when the model changes",
   /updateModelHint\(\)[\s\S]{0,120}?onchange/.test(js.replace(/\n/g, " ")) || (js.match(/updateModelHint\(\);/g) || []).length >= 3);
+console.log("");
+console.log("the timing tab explains itself and can be reset");
+
+var presetsSrc = fs.readFileSync(path.join(__dirname, "..", "client", "presets.js"), "utf8");
+var timingDefsBlock = (presetsSrc.match(/var TIMING_DEFS = \{([\s\S]*?)\n  \};/) || [])[1] || "";
+var timingHelpBlock = (presetsSrc.match(/var TIMING_HELP = \{([\s\S]*?)\n  \};/) || [])[1] || "";
+var timingKeys = (timingDefsBlock.match(/^\s{4}(\w+):/gm) || []).map(function (s) { return s.replace(/[:\s]/g, ""); });
+var missingTimingHelp = timingKeys.filter(function (k) { return timingHelpBlock.indexOf(k + ":") < 0; });
+check("every timing control has a tooltip",
+  timingKeys.length >= 3 && missingTimingHelp.length === 0,
+  "no help for: " + missingTimingHelp.join(", "));
+check("the timing help is stamped onto the defs, the way control help is",
+  /TIMING_DEFS\[timingHelpKey\]\.help = TIMING_HELP\[timingHelpKey\]/.test(presetsSrc),
+  "the table alone would not reach the rows");
+check("the reset button is in the markup", /id="resetTimingBtn"/.test(html));
+check("the reset clears the panel's own timing values",
+  /function resetTiming\(\)/.test(js) && /state\.timing = \{\};/.test(js));
+check("the reset button is wired", /resetTimingBtn\.onclick = resetTiming/.test(js));
 check("the status reports the pull so it is not a silent change",
   /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
   "a correction the user cannot see is indistinguishable from no correction");

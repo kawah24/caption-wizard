@@ -702,6 +702,32 @@
     }
   }
 
+  /**
+   * Put the timing controls back to their defaults.
+   *
+   * currentTiming() layers state.timing over TIMING_DEFAULTS, so clearing the
+   * panel's own copy is the reset. That includes the offset, which is normally set
+   * automatically from the clip's start time.
+   */
+  function resetTiming() {
+    var changed = 0;
+    var key;
+    for (key in state.timing) {
+      if (state.timing.hasOwnProperty(key)) changed++;
+    }
+
+    if (!changed) {
+      setStatus("Timing is already at its defaults.");
+      return;
+    }
+
+    state.timing = {};
+    renderTiming();
+    updateStats();
+    updateTimingSummary();
+    setStatus(changed + " timing setting(s) reset to defaults.", "ok");
+  }
+
   function renderTiming() {
     var container = el.timingContainer;
     container.innerHTML = "";
@@ -1355,6 +1381,8 @@
     el.modelSelect = byId("modelSelect");
     el.languageSelect = byId("languageSelect");
     el.allowDownload = byId("allowDownload");
+  el.resetTimingBtn = byId("resetTimingBtn");
+  el.modelHint = byId("modelHint");
   el.modelHint = byId("modelHint");
     el.audioPath = byId("audioPath");
     el.chooseAudioBtn = byId("chooseAudioBtn");
@@ -1458,6 +1486,7 @@
     el.clearGeneratedBtn.onclick = onClearGenerated;
     el.refreshBtn.onclick = refresh;
     el.resetStyleBtn.onclick = resetStyle;
+  if (el.resetTimingBtn) el.resetTimingBtn.onclick = resetTiming;
 
     refresh();
 
