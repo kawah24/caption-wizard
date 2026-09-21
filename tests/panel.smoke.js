@@ -250,10 +250,16 @@ check("the how-to list keeps the order that was asked for",
   "got: " + tipOrder.join(" | "));
 var cssSrc = fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8");
 var boxRule = (cssSrc.match(/#transcriptInput \{([\s\S]*?)\}/) || [])[1] || "";
-var boxHeight = parseInt((boxRule.match(/min-height:\s*(\d+)px/) || [])[1] || "0", 10);
-check("the transcript box is given real room", boxHeight >= 280,
-  "found min-height " + boxHeight + "px; the box is the main working area");
+var boxFloor = parseInt((boxRule.match(/min-height:\s*(\d+)px/) || [])[1] || "0", 10);
+check("the transcript box takes the leftover height",
+  /flex:\s*1 1 auto/.test(boxRule) && /#view-text \{[\s\S]{0,200}?flex-direction:\s*column/.test(cssSrc),
+  "the box must flex, or the buttons fall out of view when the panel is short");
+check("the box keeps a usable floor", boxFloor >= 120 && boxFloor <= 200,
+  "found " + boxFloor + "px; it must shrink on a short panel but not vanish");
 check("the box is still resizable by hand", /resize:\s*vertical/.test(cssSrc));
+check("the tips and the button row sit outside the box, so they cannot scroll away with it",
+  /<ul class="tips">/.test(html) && html.indexOf('class="tips"') < html.indexOf('id="transcriptInput"') &&
+  html.indexOf('id="transcriptInput"') < html.indexOf('id="loadSrtBtn"'));
 check("the sample transcript does not repeat the tips above it",
   echoes.length === 0, "repeated: " + echoes.join(" | "));
 check("the sample is an actual demo transcript",

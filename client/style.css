@@ -774,8 +774,16 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   padding: 5px 6px;
   resize: vertical;
 }
-/* The transcript box is where the work happens, so it gets the room. It still
-   cannot collapse below something usable, and the drag handle is left in place. */
+/* The transcript tab fills the panel instead of scrolling: the box takes whatever
+   height is left after the tips, the button row and the status lines, so Load SRT,
+   Sample and Clear text stay in view however the panel is resized. The box keeps a
+   floor, and if the panel is shorter than that the tab scrolls as it did before. */
+#view-text {
+  display: flex;
+  flex-direction: column;
+}
+
 #transcriptInput {
-  min-height: 300px;
+  flex: 1 1 auto;
+  min-height: 140px;
 }
