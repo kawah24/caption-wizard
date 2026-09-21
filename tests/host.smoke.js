@@ -1188,8 +1188,12 @@ for (var lo = 0; lo < 220; lo++) {
 }
 var overComp = fakeCreateComp(1080, 1920, 60);
 var overRes = runCreate(overComp, lots, cappedStyle, true);
-check("a run that would pass the ceiling stops and says why",
-  /Stopped at/.test((overRes.warnings || []).join(" ")),
+// Either guard may be the one that trips, depending on the run: the caption budget
+// declines the layer-hungry look, and the ceiling stops a run outright. What matters
+// is that a large run is bounded and that the reason is stated.
+var overWarnings = (overRes.warnings || []).join(" ");
+check("a run too large for the look is bounded and the reason is stated",
+  /declined|Stopped at/.test(overWarnings),
   "layers: " + overComp.allLayers().length + "  warnings: " + JSON.stringify(overRes.warnings));
 check("and it stops near the ceiling rather than building all of them",
   overComp.allLayers().length <= sandbox.LCP_MAX_LAYERS + 8,

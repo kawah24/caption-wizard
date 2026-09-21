@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.26"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.27"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.26";
+var LCP_VERSION = "1.8.27";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -34,7 +34,14 @@ var _lcpBoxNote = "";   // why the background bar was or was not built
 // generation all happens inside a single undo step - which After Effects reports as
 // a freeze while it works. This is the ceiling: past it the run stops and says so,
 // rather than grinding an application to a halt with no explanation.
-var LCP_MAX_LAYERS = 600;
+var LCP_MAX_LAYERS = 400;
+
+// The per-line look multiplies layers by the number of lines, and After Effects' text
+// engine is slow enough that hundreds of new text layers inside one undo step reads as
+// a frozen application. So it is used only on a run small enough for the cost to be
+// bounded; past that every caption is one layer, as it always was, and the result says
+// the look was declined rather than leaving it a mystery.
+var LCP_MAX_CAPTIONS_FOR_LINES = 40;
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -1538,6 +1545,15 @@ function lcp_create(payloadJson) {
     // Ctrl+Z brings the previous captions back, not just the last layer.
     if (replacePrevious) removed = lcp_removeTagged(comp);
 
+    var allowLines = payload.captions.length <= LCP_MAX_CAPTIONS_FOR_LINES;
+    if (!allowLines) {
+      warnings.push("This run has " + payload.captions.length + " captions, so the " +
+                    "power word look was declined: drawing a caption a line at a time " +
+                    "multiplies the layers, and past " + LCP_MAX_CAPTIONS_FOR_LINES +
+                    " captions that is more work than After Effects should be asked to " +
+                    "do in one step. Every caption is one layer instead.");
+    }
+
     for (i = 0; i < payload.captions.length; i++) {
       var caption = payload.captions[i];
 
@@ -1577,7 +1593,7 @@ function lcp_create(payloadJson) {
         } else {
           // A caption with power words is drawn a line at a time, so the line carrying the
           // power word can be drawn larger than the rest.
-          var blockAdded = (caption.emphasis && caption.emphasis.length)
+          var blockAdded = (caption.emphasis && caption.emphasis.length && allowLines)
             ? lcp_addPowerLines(comp, caption, style)
             : lcp_addLayer(
                 comp,
