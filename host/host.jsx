@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.25"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.26"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.25";
+var LCP_VERSION = "1.8.26";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -29,6 +29,12 @@ var LCP_TAG = "LCP::created";
  */
 var _lcpLastPlacement = null;
 var _lcpBoxNote = "";   // why the background bar was or was not built
+
+// A caption drawn a line at a time costs several layers instead of one, and the
+// generation all happens inside a single undo step - which After Effects reports as
+// a freeze while it works. This is the ceiling: past it the run stops and says so,
+// rather than grinding an application to a halt with no explanation.
+var LCP_MAX_LAYERS = 600;
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -581,6 +587,10 @@ function lcp_addPowerLines(comp, caption, style) {
   for (m = 0; m < sourceWords.length; m++) { if (!powerIdx[m] && sourceWords[m]) plainCount++; }
   var target = parseInt(style.lines, 10);
   if (isNaN(target) || target < 1) target = 1;
+
+  // A caption that is all numbers or all shouted words would otherwise become one
+  // layer per word. Six lines is as far as this look needs to go.
+  if (target > 6) target = 6;
   var perLine = Math.max(1, Math.ceil(plainCount / target));
 
   var lines = [];
@@ -1530,6 +1540,15 @@ function lcp_create(payloadJson) {
 
     for (i = 0; i < payload.captions.length; i++) {
       var caption = payload.captions[i];
+
+      if (created + backdrops + bars >= LCP_MAX_LAYERS) {
+        warnings.push("Stopped at " + LCP_MAX_LAYERS + " layers. A style that draws a " +
+                      "caption a line at a time builds several layers per caption, so a " +
+                      "long transcript can ask for hundreds. Generate a shorter range, or " +
+                      "pick a style that draws one layer per caption.");
+        break;
+      }
+
       try {
         if (style.karaoke && caption.words && caption.words.length > 1) {
           // Karaoke keeps the whole phrase and highlights the spoken word.

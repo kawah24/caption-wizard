@@ -1153,6 +1153,47 @@ var planned = lcpPresets.markEmphasis([{ text: "we did 1974 together", words: nu
 check("the planner records the power word indices on the caption",
   !!planned[0].emphasis && planned[0].emphasis.indexOf(2) >= 0,
   JSON.stringify(planned[0].emphasis));
+console.log("");
+console.log("a look that costs layers cannot run away");
+
+// One layer per line is several times the layers, all built inside one undo step,
+// which is what a frozen application actually is. These two ceilings are why that
+// cannot happen again unnoticed.
+var cappedStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+var manyWords = [];
+var manyText = [];
+for (var mw = 0; mw < 30; mw++) { manyWords.push({ text: "word" + mw }); manyText.push("word" + mw); }
+var cappedComp = fakeCreateComp(1080, 1920, 10);
+var cappedRes = runCreate(cappedComp, [{
+  text: manyText.join(" "), startMs: 0, endMs: 2000,
+  emphasis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+             20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+  words: manyWords
+}], cappedStyle, true);
+check("a caption of all power words still becomes a handful of layers",
+  cappedComp.allLayers().length <= 6,
+  "layers: " + cappedComp.allLayers().length);
+
+check("the ceiling exists and is a sane number",
+  typeof sandbox.LCP_MAX_LAYERS === "number" && sandbox.LCP_MAX_LAYERS > 0 &&
+  sandbox.LCP_MAX_LAYERS <= 2000, String(sandbox.LCP_MAX_LAYERS));
+
+var overflow = [];
+var lots = [];
+for (var lo = 0; lo < 220; lo++) {
+  lots.push({
+    text: "one two three " + lo, startMs: lo * 100, endMs: lo * 100 + 90,
+    emphasis: [3], words: null
+  });
+}
+var overComp = fakeCreateComp(1080, 1920, 60);
+var overRes = runCreate(overComp, lots, cappedStyle, true);
+check("a run that would pass the ceiling stops and says why",
+  /Stopped at/.test((overRes.warnings || []).join(" ")),
+  "layers: " + overComp.allLayers().length + "  warnings: " + JSON.stringify(overRes.warnings));
+check("and it stops near the ceiling rather than building all of them",
+  overComp.allLayers().length <= sandbox.LCP_MAX_LAYERS + 8,
+  "layers: " + overComp.allLayers().length);
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
