@@ -774,3 +774,8 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   padding: 5px 6px;
   resize: vertical;
 }
+/* The transcript box is where the work happens, so it gets the room. It still
+   cannot collapse below something usable, and the drag handle is left in place. */
+#transcriptInput {
+  min-height: 300px;
+}

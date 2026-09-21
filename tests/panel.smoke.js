@@ -248,6 +248,12 @@ check("the how-to list keeps the order that was asked for",
   tipOrder[3] === "Pick a style, then generate." &&
   tipOrder[4] === "Press Sample to try it with a built-in example.",
   "got: " + tipOrder.join(" | "));
+var cssSrc = fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8");
+var boxRule = (cssSrc.match(/#transcriptInput \{([\s\S]*?)\}/) || [])[1] || "";
+var boxHeight = parseInt((boxRule.match(/min-height:\s*(\d+)px/) || [])[1] || "0", 10);
+check("the transcript box is given real room", boxHeight >= 280,
+  "found min-height " + boxHeight + "px; the box is the main working area");
+check("the box is still resizable by hand", /resize:\s*vertical/.test(cssSrc));
 check("the sample transcript does not repeat the tips above it",
   echoes.length === 0, "repeated: " + echoes.join(" | "));
 check("the sample is an actual demo transcript",
