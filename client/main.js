@@ -661,6 +661,19 @@
                      (place.fontDrawnPx / place.compWidth * 100).toFixed(1) + "% of the width), from a " +
                      Math.round(place.fontSetting) + "px setting.";
         }
+        // The letter spacing is only comparable when both sides draw the same face:
+        // a fallback has different glyph widths, so the same tracking setting shows
+        // up as different spacing. Compare what the host resolved with what the
+        // preview is drawing, and say so rather than leaving it to the eye.
+        if (place.fontFace && root.LcpFonts && root.LcpFonts.familyForPostScript) {
+          var compFamily = root.LcpFonts.familyForPostScript(place.fontFace);
+          var previewFamily = root.LcpPreviews.resolvePreviewFont(settings.fontFamily).family;
+          if (compFamily !== previewFamily) {
+            message += "\nFont mismatch: the comp resolved " + place.fontFace + " (" + compFamily +
+                       ") while this preview draws " + previewFamily +
+                       " - letter spacing, size and outline will differ until they match.";
+          }
+        }
       }
       if (result.warnings && result.warnings.length) {
         message += "\n" + result.warnings.join("\n");

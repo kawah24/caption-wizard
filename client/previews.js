@@ -844,6 +844,7 @@
     glowShadow: glowShadow,
     strokePx: strokePx,
     outlineShadow: outlineShadow,
+    resolvePreviewFont: resolvePreviewFont,
     applyLineBreaks: applyLineBreaks,
     normalizeName: normalizeName,
     camelSplit: camelSplit,
