@@ -168,6 +168,14 @@ check("only when there are saved styles",
 check("the heading spans the grid rather than filling a cell",
   /\.grid-section\s*\{[\s\S]{0,80}grid-column: 1 \/ -1;/.test(
     fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8")));
+console.log("");
+console.log("the clamp is actually called, not just available");
+
+check("main.js pulls the first cue back with the reported onset",
+  /clampFirstCue\(\s*root\.LcpAuto\.segmentsToCues\(result\.segments\), result\.onsetMs\)/.test(js),
+  "the helper existed but nothing called it once already");
+check("the transcriber reports the onset it measured",
+  /"onsetMs": detect_speech_onset/.test(fs.readFileSync(path.join(__dirname, "..", "tools", "transcribe.py"), "utf8")));
 console.log("saved styles");
 
 check("the panel persists the session under named keys",
