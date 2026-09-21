@@ -177,9 +177,42 @@ check("no settings at all does not throw",
 check("the live stage places captions with it",
   /captionPlacement\(settings\)/.test(source) &&
   /anchor\.style\.transform = spot\.transform/.test(source));
-check("the preview draws the outline outside, via paint-order",
-  /paintOrder = "stroke fill"/.test(source) &&
-  /label\.style\.paintOrder = ""/.test(source));
+console.log("");
+console.log("the outline can only grow outward");
+
+var outline = P.outlineShadow(10, "#1b2bff");
+check("it is sixteen hard offsets and nothing blurred",
+  (outline.match(/px /g) || []).length === 32 && !/ [1-9][\\d.]*px #/.test(outline), outline);
+check("it carries the style's colour", outline.indexOf("#1b2bff") >= 0);
+check("it reaches half the stroke width",
+  (function () {
+    var parts = outline.split(", ");
+    var max = 0;
+    parts.forEach(function (p) {
+      var m = p.match(/^(-?[\d.]+)px (-?[\d.]+)px/);
+      if (m) max = Math.max(max, Math.abs(parseFloat(m[1])), Math.abs(parseFloat(m[2])));
+    });
+    return Math.abs(max - 5) < 0.01;
+  })(), outline);
+check("it grows with the slider",
+  P.outlineShadow(20, "#fff") !== P.outlineShadow(4, "#fff"));
+check("it is symmetric, so the letters are never shifted",
+  (function () {
+    var sum = 0;
+    P.outlineShadow(10, "#fff").split(", ").forEach(function (p) {
+      var m = p.match(/^(-?[\d.]+)px (-?[\d.]+)px/);
+      if (m) { sum += parseFloat(m[1]) + parseFloat(m[2]); }
+    });
+    return Math.abs(sum) < 0.01;
+  })());
+check("a zero width draws nothing",
+  (P.outlineShadow(0, "#fff").match(/[1-9][\d.]*px/g) || []).length === 0, P.outlineShadow(0, "#fff"));
+check("a filled caption never gets a centred stroke",
+  !/webkitTextStroke = strokeWidthPx/.test(source) ||
+  /outlineOnly/.test(source));
+check("a filled caption uses the shadow outline, never a centred stroke",
+  /outlineShadow\(strokeWidthPx/.test(source) &&
+  /var outlineOnly = \(settings\.filled === false\)/.test(source));
 check("the stroke rule is width times factor, with no floor",
   /function strokePx[\s\S]{0,320}return Math\.max\(0, width \* factor\);/.test(source));
 check("the cards are centred by the stylesheet, not by script",
