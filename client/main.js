@@ -382,28 +382,8 @@
     var grid = el.styleGrid;
     grid.innerHTML = "";
 
-    // Cards deliberately get no settings: they show each preset's own look at
-    // their own thumbnail size. Feeding them the current settings meant a large
-    // font size overflowed the card, and a grid that shifts while you drag a
-    // slider is hard to choose from.
-    var presets = root.LcpPresets.PRESETS;
-    for (var i = 0; i < presets.length; i++) {
-      (function (preset) {
-        grid.appendChild(root.LcpPreviews.buildCard(preset, {
-          selected: preset.id === state.presetId,
-          onSelect: function (id) {
-            state.presetId = id;
-            renderStyleGrid();
-            renderStage();
-            renderSettings();
-            saveSession();
-          }
-        }));
-      })(presets[i]);
-    }
-
-    // Saved styles get a section of their own, so the shipped order stays put and
-    // it is obvious which cards are yours.
+    // Saved styles come first, in a section of their own, so the styles you use
+    // sit at the top and the shipped ones stay below in their authored order.
     if (state.customStyles.length) {
       var heading = doc.createElement("div");
       heading.className = "grid-section";
@@ -411,9 +391,6 @@
       grid.appendChild(heading);
     }
 
-    // Saved styles come after the built-ins.
-    // They borrow the motion of the style they were built from and keep their own
-    // settings, which the editor then works on directly.
     for (var c = 0; c < state.customStyles.length; c++) {
       (function (entry) {
         var base = root.LcpPresets.getPreset(entry.base);
@@ -444,6 +421,26 @@
           }
         }));
       })(state.customStyles[c]);
+    }
+
+    // Cards deliberately get no settings: they show each preset's own look at
+    // their own thumbnail size. Feeding them the current settings meant a large
+    // font size overflowed the card, and a grid that shifts while you drag a
+    // slider is hard to choose from.
+    var presets = root.LcpPresets.PRESETS;
+    for (var i = 0; i < presets.length; i++) {
+      (function (preset) {
+        grid.appendChild(root.LcpPreviews.buildCard(preset, {
+          selected: preset.id === state.presetId,
+          onSelect: function (id) {
+            state.presetId = id;
+            renderStyleGrid();
+            renderStage();
+            renderSettings();
+            saveSession();
+          }
+        }));
+      })(presets[i]);
     }
   }
 
