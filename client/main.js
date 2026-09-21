@@ -702,7 +702,10 @@
   function renderSettings() {
     var container = el.settingsContainer;
     container.innerHTML = "";
-    var keys = root.LcpPresets.controlsFor(state.presetId);
+    // Resolve through the base, never the raw selection. A saved style's name is not in the
+    // preset table, so asking directly fell back to the first card - which is why every
+    // custom style showed Karaoke's controls, Highlight and Base words included.
+    var keys = root.LcpPresets.controlsFor(baseIdFor(state.presetId));
     var settings = currentSettings();
 
     for (var i = 0; i < keys.length; i++) {

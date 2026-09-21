@@ -390,6 +390,10 @@ check('a saved style stores its whole look, not just what was touched',
   /resolveSettings\(base, state\.overrides\[state\.presetId\] \|\| \{\}\)/.test(js),
   'saving the touched values alone let the base card decide how the saved style looked');
 
+check('the settings panel resolves controls through the base, not the raw selection',
+  /controlsFor\(baseIdFor\(state\.presetId\)\)/.test(js),
+  'asking the preset table directly falls back to the first card for a saved style');
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
