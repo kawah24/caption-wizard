@@ -792,3 +792,13 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   flex: 1 1 auto;
   min-height: 140px;
 }
+/* The transcript buttons stay put. The box flexes and the status lines can scroll,
+   but Load SRT, Sample and Clear text are pinned to the bottom of the tab, so a
+   short panel can never hide the controls the tab exists for. */
+#view-text .row {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-top: 4px;
+  background: var(--bg);
+}

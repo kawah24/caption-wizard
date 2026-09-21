@@ -260,7 +260,10 @@ check("the view is allowed to shrink to the height it is given",
 check("the box keeps a usable floor", boxFloor >= 120 && boxFloor <= 200,
   "found " + boxFloor + "px; it must shrink on a short panel but not vanish");
 check("the box is still resizable by hand", /resize:\s*vertical/.test(cssSrc));
-check("the tips and the button row sit outside the box, so they cannot scroll away with it",
+check("the transcript buttons are pinned, so a short panel cannot hide them",
+  /#view-text \.row \{[\s\S]{0,200}?position:\s*sticky/.test(cssSrc) &&
+  /#view-text \.row \{[\s\S]{0,200}?bottom:\s*0/.test(cssSrc),
+  "placing them below the box is not enough when the content is taller than the panel");check("the tips and the button row sit outside the box, so they cannot scroll away with it",
   /<ul class="tips">/.test(html) && html.indexOf('class="tips"') < html.indexOf('id="transcriptInput"') &&
   html.indexOf('id="transcriptInput"') < html.indexOf('id="loadSrtBtn"'));
 check("the sample transcript does not repeat the tips above it",
