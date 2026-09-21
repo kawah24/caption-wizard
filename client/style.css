@@ -781,6 +781,11 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
 #view-text {
   display: flex;
   flex-direction: column;
+  /* Without this the view keeps its content height instead of the height it is
+     given, so the button row is pushed past the bottom of the panel and out of the
+     window - the view is a flex item, and a flex item's automatic minimum is its
+     content. */
+  min-height: 0;
 }
 
 #transcriptInput {
