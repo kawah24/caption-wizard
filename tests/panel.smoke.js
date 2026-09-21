@@ -146,6 +146,7 @@ console.log("");
 console.log("saved styles sit in their own section");
 
 check("the grid builds a Custom heading", /heading\.textContent = "Custom"/.test(js));
+check("and a Default heading for the shipped styles", /shipped\.textContent = "Default"/.test(js));
 check("only when there are saved styles",
   (function () {
     var guard = js.indexOf("if (state.customStyles.length) {");

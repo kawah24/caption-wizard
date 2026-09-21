@@ -423,6 +423,13 @@
       })(state.customStyles[c]);
     }
 
+    // The shipped styles get their own heading, so the two sections read as
+    // sections rather than one long grid.
+    var shipped = doc.createElement("div");
+    shipped.className = "grid-section";
+    shipped.textContent = "Default";
+    grid.appendChild(shipped);
+
     // Cards deliberately get no settings: they show each preset's own look at
     // their own thumbnail size. Feeding them the current settings meant a large
     // font size overflowed the card, and a grid that shifts while you drag a
