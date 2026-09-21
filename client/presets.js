@@ -61,6 +61,11 @@
     boxColor: { label: "Bar colour", type: "color", dependsOn: "applyBox" },
     boxOpacity: { label: "Bar opacity", type: "range", min: 0, max: 100, step: 5, unit: "%", dependsOn: "applyBox" },
     boxPadding: { label: "Bar padding", type: "range", min: 0, max: 80, step: 2, unit: "px", dependsOn: "applyBox" },
+    // A third way to choose: one word a caption, by hashing the caption's own text.
+    // Not a random number generator, because the preview rebuilds the plan on every
+    // repaint and a fresh pick each time would make it flicker while the comp sat still.
+    emphasisRandom: { label: "Pick the power word at random", type: "toggle" },
+
     emphasisWords: { label: "Power words (comma separated)", type: "text" },    emphasisAuto: { label: "Auto: numbers and SHOUTED words", type: "toggle" },
     emphasisColor: { label: "Power word colour", type: "color" },
     emphasisScale: { label: "Power word size", type: "range", min: 100, max: 150, step: 2, unit: "%" },
@@ -173,6 +178,8 @@
     boxColor: "Colour of the bar.",
     boxOpacity: "How solid the bar is.",
     boxPadding: "Space between the words and the edge of the bar.",
+    emphasisRandom: "Choose one word in each caption without listing any, so the emphasis moves around rather than repeating the same rule.",
+
     emphasisWords: "Words to hit harder, separated by commas. Leave empty to use the automatic list.",
     emphasisAuto: "Emphasise the words a caption usually leans on, without listing them yourself.",
     emphasisColor: "Colour given to emphasised words.",
@@ -213,7 +220,7 @@
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
-    "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
+    "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
     "inDurMs", "outDurMs"
   ];
 
@@ -463,8 +470,8 @@
       // The emphasis keys are not in PLAIN_CONTROLS: this card exists for them.
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
                  "strokeWidth", "tracking", "transform", "maxWords", "splitBySentence",
-                 "align", "posX", "posY", "wordByWord",
-                 "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
+                 "align", "posX", "posY",
+                 "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
       defaults: {
         // Bold is left off, like every other card: the weight in the reference is
         // the font doing its job, and a preset that forces bold fights the picker.
@@ -474,7 +481,7 @@
         // word is drawn with the emphasis style, which is how the reference gets a
         // larger word without a second font size inside one text document.
         lines: "3",
-        emphasisWords: "", emphasisAuto: true,
+        emphasisRandom: true, emphasisAuto: false, emphasisWords: "",
         // Bigger and heavier, not a second colour - that is the look being copied.
         emphasisColor: "#ffffff", emphasisScale: 148,
         inDurMs: 200, outDurMs: 150
@@ -536,6 +543,16 @@
    * the preview to colour them, so the two can never disagree. The host script
    * only has to honour the flag it is sent.
    */
+  /** A small, stable hash, so a caption always picks the same word. */
+  function emphasisHash(text) {
+    var h = 0;
+    var i;
+    for (i = 0; i < text.length; i++) {
+      h = (h * 31 + text.charCodeAt(i)) % 1000003;
+    }
+    return h;
+  }
+
   function isEmphasisWord(word, settings, allowShouted) {
     var text = String(word === null || word === undefined ? "" : word)
       .replace(/^[^\w\d]+|[^\w\d]+$/g, "");
@@ -568,6 +585,39 @@
 
     for (i = 0; i < captions.length; i++) {
       var caption = captions[i];
+      // The power words are decided from the caption's text, so they exist whether or not
+      // the caption carries word timings.
+      var plainWords = String(caption.text || "").split(/\s+/);
+      var marks = [];
+      var w2;
+      if (settings && settings.emphasisRandom) {
+        // One word, picked by hashing the caption. The same caption always chooses the
+        // same word, so what the preview shows is what the host builds.
+        var candidates = [];
+        for (w2 = 0; w2 < plainWords.length; w2++) {
+          var bare = String(plainWords[w2] || "").replace(/^[^\w\d]+|[^\w\d]+$/g, "");
+          if (bare.length > 3) candidates.push(w2);
+        }
+        if (!candidates.length) {
+          for (w2 = 0; w2 < plainWords.length; w2++) {
+            if (plainWords[w2]) candidates.push(w2);
+          }
+        }
+        if (candidates.length) {
+          marks.push(candidates[emphasisHash(String(caption.text || "")) % candidates.length]);
+        }
+      } else {
+        var shout = false;
+        for (w2 = 0; w2 < plainWords.length; w2++) {
+          var probe = String(plainWords[w2] || "");
+          if (probe && probe !== probe.toUpperCase()) { shout = true; break; }
+        }
+        for (w2 = 0; w2 < plainWords.length; w2++) {
+          if (plainWords[w2] && isEmphasisWord(plainWords[w2], settings, shout)) marks.push(w2);
+        }
+      }
+      caption.emphasis = marks;
+
       if (!caption.words || !caption.words.length) continue;
 
       // If every word is already shouted, shouting is not a signal - otherwise
@@ -582,21 +632,6 @@
         caption.words[w].emphasis = isEmphasisWord(caption.words[w].text, settings, allowShouted);
       }
     }
-    // The same decision once more, recorded as word indices counted from the caption's
-    // text. That is what the host needs: a text document holds one font size, so the
-    // line carrying a power word is drawn as its own layer at the emphasis size.
-    // Deciding it here keeps one rule instead of two that drift apart.
-    var plainWords = String(caption.text || "").split(/\s+/);
-    var marks = [];
-    var shout = false;
-    for (w = 0; w < plainWords.length; w++) {
-      var probe = String(plainWords[w] || "");
-      if (probe && probe !== probe.toUpperCase()) { shout = true; break; }
-    }
-    for (w = 0; w < plainWords.length; w++) {
-      if (plainWords[w] && isEmphasisWord(plainWords[w], settings, shout)) marks.push(w);
-    }
-    caption.emphasis = marks;
 
     return captions;
   }

@@ -1153,8 +1153,10 @@ check("a caption without power words still builds one layer",
 
 // and the planner is what decides, so both sides agree
 var planned = lcpPresets.markEmphasis([{ text: "we did 1974 together", words: null }], pwStyle);
-check("the planner records the power word indices on the caption",
-  !!planned[0].emphasis && planned[0].emphasis.indexOf(2) >= 0,
+// The card picks one word per caption rather than by the automatic rules, so exactly
+// one index is recorded - which is what the host needs to choose a line.
+check("the planner records one power word index on the caption",
+  !!planned[0].emphasis && planned[0].emphasis.length === 1,
   JSON.stringify(planned[0].emphasis));
 console.log("");
 console.log("a look that costs layers cannot run away");
@@ -1215,6 +1217,18 @@ var fewRes = runCreate(fewComp, fewBig, cappedStyle, true);
 check("a handful of power words still gets the look",
   fewComp.allLayers().length > fewBig.length,
   "layers: " + fewComp.allLayers().length + " for " + fewBig.length + " captions");
+
+console.log('');
+console.log('three lines means three');
+
+var threeComp = fakeCreateComp(1080, 1920, 10);
+var threeStyle = lcpPresets.resolveSettings('power-word', {}, lcpPresets.TIMING_DEFAULTS);
+var threeRes = runCreate(threeComp, [{
+  text: 'because everything that I did myself', startMs: 0, endMs: 2000,
+  emphasis: [3],
+  words: [{ text: 'because' }, { text: 'everything' }, { text: 'that' }, { text: 'I' }, { text: 'did' }, { text: 'myself' }]
+}], threeStyle, true);
+check('a three line card draws three layers, the power line counted in', threeRes.created === 3, 'created: ' + threeRes.created);
 
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");

@@ -260,6 +260,22 @@ if (pwPreset) {
   check("it has a blurb and preview text, like every card",
     !!pwPreset.blurb && !!pwPreset.previewLine);
 }
+console.log('');
+console.log('the random pick');
+
+var randStyle = P.resolveSettings('power-word', {});
+check('the card asks for the random pick', randStyle.emphasisRandom === true);
+check('and not the automatic rules, so only the pick shows', randStyle.emphasisAuto === false, 'emphasisAuto = ' + randStyle.emphasisAuto);
+
+var picked = P.markEmphasis([
+  { text: 'because everything that I did myself', words: null },
+  { text: 'the rain started just after midnight', words: null }
+], randStyle);
+check('one word is picked for each caption', picked[0].emphasis.length === 1 && picked[1].emphasis.length === 1, JSON.stringify([picked[0].emphasis, picked[1].emphasis]));
+
+var again = P.markEmphasis([{ text: 'because everything that I did myself', words: null }], randStyle);
+check('the same caption always picks the same word, so the preview cannot flicker', again[0].emphasis[0] === picked[0].emphasis[0], picked[0].emphasis[0] + ' vs ' + again[0].emphasis[0]);
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

@@ -602,7 +602,9 @@ function lcp_addPowerLines(comp, caption, style) {
   // A caption that is all numbers or all shouted words would otherwise become one
   // layer per word. Six lines is as far as this look needs to go.
   if (target > 6) target = 6;
-  var perLine = Math.max(1, Math.ceil(plainCount / target));
+  // The power line is one of the lines asked for, not an extra on top of them.
+  var plainLines = Math.max(1, target - 1);
+  var perLine = Math.max(1, Math.ceil(plainCount / plainLines));
 
   var lines = [];
   var lineIsPower = [];
