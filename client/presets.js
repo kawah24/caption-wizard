@@ -469,7 +469,7 @@
       previewLine: "I did",
       // The emphasis keys are not in PLAIN_CONTROLS: this card exists for them.
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
-                 "strokeWidth", "tracking", "transform", "maxWords", "splitBySentence",
+                 "strokeWidth", "tracking", "transform", "lines", "maxWords", "splitBySentence",
                  "align", "posX", "posY",
                  "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
       defaults: {

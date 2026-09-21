@@ -276,6 +276,8 @@ check('one word is picked for each caption', picked[0].emphasis.length === 1 && 
 var again = P.markEmphasis([{ text: 'because everything that I did myself', words: null }], randStyle);
 check('the same caption always picks the same word, so the preview cannot flicker', again[0].emphasis[0] === picked[0].emphasis[0], picked[0].emphasis[0] + ' vs ' + again[0].emphasis[0]);
 
+check('the card lets the line count be changed, since that is its whole look', pwPreset.controls.indexOf('lines') >= 0);
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
