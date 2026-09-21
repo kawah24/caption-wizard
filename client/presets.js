@@ -453,32 +453,6 @@
         fontSize: 150, filled: false, applyStroke: true, strokeColor: "#ffffff",
         strokeWidth: 6, transform: "uppercase", tracking: 20
       }
-    },
-    {
-      id: "power-word",
-      name: "Power Word",
-      blurb: "Quiet lines, with the word that matters drawn much larger.",
-      motion: "popIn",
-      previewLine: "I did",
-      // The emphasis keys are not in PLAIN_CONTROLS: this card exists for them.
-      controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
-                 "strokeWidth", "tracking", "transform", "maxWords", "splitBySentence",
-                 "align", "posX", "posY", "wordByWord",
-                 "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
-      defaults: {
-        // Bold is left off, like every other card: the weight in the reference is
-        // the font doing its job, and a preset that forces bold fights the picker.
-        fontSize: 150, fill: "#ffffff",
-        applyStroke: false, applyShadow: false, transform: "none", posY: 50,
-        // Three lines, and one layer per line in the comp: the line holding the power
-        // word is drawn with the emphasis style, which is how the reference gets a
-        // larger word without a second font size inside one text document.
-        lines: "3",
-        emphasisWords: "", emphasisAuto: true,
-        // Bigger and heavier, not a second colour - that is the look being copied.
-        emphasisColor: "#ffffff", emphasisScale: 148,
-        inDurMs: 200, outDurMs: 150
-      }
     }
   ];
 
@@ -582,22 +556,6 @@
         caption.words[w].emphasis = isEmphasisWord(caption.words[w].text, settings, allowShouted);
       }
     }
-    // The same decision once more, recorded as word indices counted from the caption's
-    // text. That is what the host needs: a text document holds one font size, so the
-    // line carrying a power word is drawn as its own layer at the emphasis size.
-    // Deciding it here keeps one rule instead of two that drift apart.
-    var plainWords = String(caption.text || "").split(/\s+/);
-    var marks = [];
-    var shout = false;
-    for (w = 0; w < plainWords.length; w++) {
-      var probe = String(plainWords[w] || "");
-      if (probe && probe !== probe.toUpperCase()) { shout = true; break; }
-    }
-    for (w = 0; w < plainWords.length; w++) {
-      if (plainWords[w] && isEmphasisWord(plainWords[w], settings, shout)) marks.push(w);
-    }
-    caption.emphasis = marks;
-
     return captions;
   }
 
