@@ -90,6 +90,14 @@ check("still gives a usable list", F.families().length > 0);
 check("status still explains", F.statusText().indexOf("built-in") >= 0, F.statusText());
 
 console.log("");
+console.log("the font list is not capped");
+
+check("no row cap is left in the picker",
+  !/ROW_CAP/.test(fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8")),
+  "the picker used to stop at 200 and say how many were hidden");
+check("nothing in the picker hides families behind a hint",
+  !/more - keep typing/.test(fs.readFileSync(path.join(__dirname, "..", "client", "fonts.js"), "utf8")));
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

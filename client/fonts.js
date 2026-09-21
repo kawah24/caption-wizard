@@ -206,10 +206,9 @@
       if (list.className.indexOf("open") >= 0) close(); else open();
     }
 
-    // Rendering every installed family would be wasteful (and can be a thousand
-    // rows), so the list is capped and the filter is the way to reach the rest.
-    var ROW_CAP = 200;
-
+    // Every installed family is rendered. The list scrolls, and choosing a font
+    // should not depend on already knowing what to type - 468 families is a long
+    // list but a cheap one. The filter is still there to narrow it down.
     function fill(query) {
       var all = families();
       var needle = String(query || "").replace(/^\s+|\s+$/g, "").toLowerCase();
@@ -231,16 +230,8 @@
         return;
       }
 
-      var shown = Math.min(matching.length, ROW_CAP);
-      for (i = 0; i < shown; i++) {
+      for (i = 0; i < matching.length; i++) {
         list.appendChild(buildRow(matching[i]));
-      }
-
-      if (matching.length > shown) {
-        var more = doc.createElement("div");
-        more.className = "font-empty";
-        more.textContent = "+" + (matching.length - shown) + " more - keep typing to narrow";
-        list.appendChild(more);
       }
 
       count.textContent = matching.length + " / " + all.length;
