@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.24"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.25"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.24";
+var LCP_VERSION = "1.8.25";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -555,6 +555,95 @@ function lcp_applyCase(text, style) {
  * Break one caption across 1-3 lines using hard returns (\r), which is what an
  * After Effects text document uses for a line break.
  */
+/**
+ * A caption drawn as one layer per line, so a power word can be larger.
+ *
+ * A text document holds one font size, so a word larger than its neighbours inside a
+ * line is not possible the way the reference does it. Instead the line carrying the
+ * power word becomes its own layer, drawn with the emphasis style. Everything else is
+ * unchanged, so the bar, the glow and the motion still apply to every line.
+ */
+function lcp_addPowerLines(comp, caption, style) {
+  var sourceWords = String(caption.text || "").split(/\s+/);
+  var marks = caption.emphasis || [];
+  var powerIdx = {};
+  var m;
+  for (m = 0; m < marks.length; m++) {
+    var idx = parseInt(marks[m], 10);
+    if (!isNaN(idx)) powerIdx[idx] = true;
+  }
+
+  // The lines are grouped here rather than evenly split, because the point of the
+  // look is that the power word has a line to itself. Adjacent power words stay
+  // together, so a phrase like "I did" holds its line as one. The plain words are
+  // spread over the remaining lines.
+  var plainCount = 0;
+  for (m = 0; m < sourceWords.length; m++) { if (!powerIdx[m] && sourceWords[m]) plainCount++; }
+  var target = parseInt(style.lines, 10);
+  if (isNaN(target) || target < 1) target = 1;
+  var perLine = Math.max(1, Math.ceil(plainCount / target));
+
+  var lines = [];
+  var lineIsPower = [];
+  var current = [];
+  var currentIsPower = false;
+  var flush = function () {
+    if (current.length) {
+      lines.push(current.join(" "));
+      lineIsPower.push(currentIsPower);
+    }
+    current = [];
+  };
+  for (m = 0; m < sourceWords.length; m++) {
+    var wordText = sourceWords[m];
+    if (!wordText) continue;
+    var isPower = !!powerIdx[m];
+    if (isPower) {
+      if (!currentIsPower) flush();
+      current.push(wordText);
+      currentIsPower = true;
+    } else {
+      if (currentIsPower) { flush(); currentIsPower = false; }
+      current.push(wordText);
+      if (current.length >= perLine) flush();
+    }
+  }
+  flush();
+
+  var applied = lcp_applyCase(lines.join("\r"), style);
+  lines = applied.split(/\r\n?|\n/);
+
+  var compScale = (comp.width > 0) ? (comp.width / 1920) : 1;
+  var step = (lcp_num(style.fontSize, 72) * compScale * 1.18) / Math.max(1, comp.height) * 100;
+  var baseY = lcp_num(style.posY, 78);
+  var start = lcp_num(caption.startMs, 0) / 1000;
+  var end = lcp_num(caption.endMs, 1000) / 1000;
+
+  var total = { text: 0, backdrops: 0, bars: 0 };
+  var drawn = 0;
+  var powered = 0;
+  var i;
+  for (i = 0; i < lines.length; i++) {
+    var line = String(lines[i]);
+    if (!line.replace(/\s/g, "").length) continue;
+
+    // Grouped above, so this is known rather than guessed by matching text again.
+    var isPower = !!lineIsPower[i];
+
+    var lineStyle = isPower ? lcp_emphasisStyle(style) : lcp_copyStyle(style);
+    lineStyle.posY = baseY + (i - (lines.length - 1) / 2) * step;
+
+    var added = lcp_addLayer(comp, line, start, end, lineStyle, true);
+    total.text += added.text;
+    total.backdrops += added.backdrops;
+    total.bars += (added.bars || 0);
+    drawn++;
+    if (isPower) powered++;
+  }
+
+  _lcpBoxNote = "drawn as " + drawn + " line(s), " + powered + " at the power word size";
+  return total;
+}
 function lcp_splitLines(text, lineCount, maxWords) {
   var target = parseInt(lineCount, 10);
   var value = String(text === null || text === undefined ? "" : text);
@@ -1467,14 +1556,18 @@ function lcp_create(payloadJson) {
             bars += (wordAdded.bars || 0);
           }
         } else {
-          var blockAdded = lcp_addLayer(
-            comp,
-            lcp_splitLines(lcp_applyCase(caption.text, style), style.lines, style.maxWords),
-            lcp_num(caption.startMs, 0) / 1000,
-            lcp_num(caption.endMs, 1000) / 1000,
-            style,
-            true    // one bar for the whole caption
-          );
+          // A caption with power words is drawn a line at a time, so the line carrying the
+          // power word can be drawn larger than the rest.
+          var blockAdded = (caption.emphasis && caption.emphasis.length)
+            ? lcp_addPowerLines(comp, caption, style)
+            : lcp_addLayer(
+                comp,
+                lcp_splitLines(lcp_applyCase(caption.text, style), style.lines, style.maxWords),
+                lcp_num(caption.startMs, 0) / 1000,
+                lcp_num(caption.endMs, 1000) / 1000,
+                style,
+                true
+              );
           created += blockAdded.text;
           backdrops += blockAdded.backdrops;
           bars += (blockAdded.bars || 0);

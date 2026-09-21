@@ -1117,6 +1117,42 @@ if (hexInShadow && compTint) {
     Math.abs(compTint[2] - wantB) < 0.02,
     JSON.stringify(compTint) + " vs " + hexInShadow);
 }
+console.log("");
+console.log("a power word is drawn bigger, as its own line");
+
+// The reference look: several lines, with the power word on a line of its own and
+// drawn larger. A text document cannot hold two sizes, so the comp builds one layer
+// per line and gives the power line the emphasis style.
+var pwComp = fakeCreateComp(1080, 1920, 10);
+var pwStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+var pwCaption = {
+  text: "because everything that I did myself",
+  startMs: 0, endMs: 2000,
+  emphasis: [3, 4],
+  words: [{ text: "because" }, { text: "everything" }, { text: "that" }, { text: "I" }, { text: "did" }, { text: "myself" }]
+};
+var pwRes = runCreate(pwComp, [pwCaption], pwStyle, true);
+var pwLayers = pwComp.allLayers();
+check("a caption with a power word is drawn a line at a time",
+  pwLayers.length >= 3, "layers: " + pwLayers.length + "  result: " + JSON.stringify(pwRes));
+var pwTexts = pwLayers.map(function (l) { return String(l.text || l.name); }).join(" / ");
+check("the power word gets a line to itself",
+  /(^|\/ )I did(\/|$)/.test(pwTexts) || pwTexts.indexOf("I did") >= 0, pwTexts);
+check("and the run says what it did",
+  /line\(s\)/.test(pwRes.boxNote || ""), "note: " + pwRes.boxNote);
+
+// no emphasis means the old single-layer path, unchanged
+var plainComp = fakeCreateComp(1080, 1920, 10);
+var plainRes = runCreate(plainComp, [{ text: "no power words here at all", startMs: 0, endMs: 2000, emphasis: [] }], pwStyle, true);
+check("a caption without power words still builds one layer",
+  plainComp.allLayers().length === 1,
+  "layers: " + plainComp.allLayers().length + "  result: " + JSON.stringify(plainRes));
+
+// and the planner is what decides, so both sides agree
+var planned = lcpPresets.markEmphasis([{ text: "we did 1974 together", words: null }], pwStyle);
+check("the planner records the power word indices on the caption",
+  !!planned[0].emphasis && planned[0].emphasis.indexOf(2) >= 0,
+  JSON.stringify(planned[0].emphasis));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

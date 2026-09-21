@@ -242,9 +242,13 @@ for (var pwi = 0; pwi < P.PRESETS.length; pwi++) {
 check("the Power Word card exists", !!pwPreset);
 if (pwPreset) {
   var pwSettings = P.resolveSettings("power-word", {});
-  check("it renders the emphasis in the comp, which needs word by word on",
-    pwSettings.wordByWord === true,
-    "the host applies emphasis only on its word by word path, so without this the comp ignores it");
+  // The mechanism changed: the comp now draws a caption as one layer per line and
+  // sizes the line that holds a power word, so word by word is no longer what makes
+  // emphasis appear. This pins the shape the reference asks for instead.
+  check("it asks for three lines, so the power word can have one to itself",
+    String(pwSettings.lines) === "3", "lines = " + pwSettings.lines);
+  check("and it is not word by word, which would lose the lines",
+    pwSettings.wordByWord !== true, "wordByWord = " + pwSettings.wordByWord);
   check("the emphasis is size, not a second colour",
     String(pwSettings.emphasisColor).toLowerCase() === "#ffffff" && pwSettings.emphasisScale > 130,
     pwSettings.emphasisColor + " at " + pwSettings.emphasisScale + "%");
