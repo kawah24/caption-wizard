@@ -118,14 +118,21 @@ console.log("the live stage measures itself after layout, not before");
 check("the live stage re-applies its scale once it has been laid out",
   /requestAnimationFrame/.test(stageSource) &&
   /requestAnimationFrame\(function \(\) \{\s*\n\s*sizeStage\(stage, compWidth, compHeight, opts\.maxHeight\);/.test(stageSource));
-check("buildStage measures twice: once detached, once after layout",
-  (stageSource.match(/applyStageSettings\(/g) || []).length === 2,
+check("buildStage measures after layout, and again when the width changes",
+  (stageSource.match(/applyStageSettings\(/g) || []).length >= 3,
   (stageSource.match(/applyStageSettings\(/g) || []).length + " call(s)");
-check("both passes re-fit the frame",
-  (stageSource.match(/sizeStage\(/g) || []).length === 2,
+check("the stage watches its own width",
+  /new root\.ResizeObserver/.test(stageSource));
+check("it ignores a zero or unchanged width",
+  /if \(!width \|\| width === lastWidth\) return;/.test(stageSource));
+check("and re-fits and re-applies when the width really changes",
+  /watch\.observe\(stage\)/.test(stageSource));
+check("every pass re-fits the frame",
+  (stageSource.match(/sizeStage\(/g) || []).length >= 3,
   (stageSource.match(/sizeStage\(/g) || []).length + " call(s)");
-check("the second pass reuses the same settings",
-  (stageSource.match(/applyStageSettings\(stage, preset, settings, \{ compWidth: compWidth, compHeight: compHeight \}\);/g) || []).length === 2);
+check("every pass reuses the same settings",
+  (stageSource.match(/applyStageSettings\(stage, preset, settings, \{ compWidth: compWidth, compHeight: compHeight \}\);/g) || []).length >= 3,
+  (stageSource.match(/applyStageSettings\(stage, preset, settings, \{ compWidth: compWidth, compHeight: compHeight \}\);/g) || []).length + " call(s)");
 
 console.log("");
 console.log("caption placement, shared by the stage and the cards");

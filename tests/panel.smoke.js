@@ -141,6 +141,11 @@ check("it never touches the chosen audio path", focusHandler.indexOf("useCompMed
 check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 
 console.log("");
+check("switching to the style tab re-fits the stage",
+  /if \(tabId === "style"\) \{\s*resizeStage\(\);/.test(js));
+check("re-fitting also re-applies the caption's scale",
+  /function resizeStage[\s\S]{0,700}applyStageSettings/.test(js));
+
 console.log("the preview is a scaled view, and says so");
 
 check("the stage cap is one named constant",

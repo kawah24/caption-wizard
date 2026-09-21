@@ -665,6 +665,23 @@
       });
     }
 
+    // The requestAnimationFrame above cannot help while the stage has no width at
+    // all - which is the case for a table built on a hidden tab, where it measures
+    // zero and falls back to the assumed frame width. Watch the stage instead and
+    // re-fit whenever its width actually changes: being revealed, the panel being
+    // resized, and the layout switching between wide and narrow all land here.
+    if (root.ResizeObserver) {
+      var lastWidth = stage.clientWidth || 0;
+      var watch = new root.ResizeObserver(function () {
+        var width = stage.clientWidth || 0;
+        if (!width || width === lastWidth) return;
+        lastWidth = width;
+        sizeStage(stage, compWidth, compHeight, opts.maxHeight);
+        applyStageSettings(stage, preset, settings, { compWidth: compWidth, compHeight: compHeight });
+      });
+      watch.observe(stage);
+    }
+
     if (!opts.disableMedia) attachMedia(frame, preset.id, 0);
     return stage;
   }

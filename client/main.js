@@ -307,6 +307,14 @@
     if (!stage) return;
     var comp = currentCompSize();
     root.LcpPreviews.sizeStage(stage, comp.width, comp.height, STAGE_MAX_HEIGHT);
+
+    // Re-fitting the frame is not enough: the caption's size is derived from the
+    // frame's width, so it has to be re-applied too. Without this the stage kept
+    // the scale it was given while it had no width at all - and a stage built on
+    // a hidden tab has none, which is why the preview looked wrong until a
+    // setting was touched.
+    root.LcpPreviews.applyStageSettings(stage, root.LcpPresets.getPreset(state.presetId),
+      currentSettings(), { compWidth: comp.width, compHeight: comp.height });
   }
 
   /** A real caption from the transcript, for the preview stage. */
@@ -1027,6 +1035,12 @@
     el.viewStyle.style.display = tabId === "style" ? "block" : "none";
     el.viewTiming.style.display = tabId === "timing" ? "block" : "none";
     el.viewAuto.style.display = tabId === "auto" ? "block" : "none";
+
+    // The stage is built while this tab is hidden, so it has never had a width to
+    // measure against. Re-fit it the moment it becomes visible.
+    if (tabId === "style") {
+      resizeStage();
+    }
 
     // Generate belongs to the style: it applies the style you picked. The rest of
     // the footer stays visible everywhere, so a transcribe message or an error is
