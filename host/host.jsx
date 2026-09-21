@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.22"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.23"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.22";
+var LCP_VERSION = "1.8.23";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -745,12 +745,21 @@ function lcp_applyGlowEffect(layer, style) {
     try { glow.property("Glow Radius").setValue(radius); } catch (e2) { /* defaults */ }
     try { glow.property("Glow Intensity").setValue(intensity); } catch (e3) { /* defaults */ }
 
-    // Tint the glow with an explicit colour, so it reads as a halo in the style's
-    // own colour rather than a white bloom. Best effort: on a localised UI these
-    // lookups fail and the effect keeps its own defaults.
+    // Tint the glow with an explicit colour, so it reads as a halo in the style's own
+    // colour rather than a bloom of whatever the text happens to be.
+    //
+    // Glow Colors is a menu: 1 is Original Colors, 2 is A & B Colors, 3 is Arbitrary
+    // Map. This set 1, so Color A and Color B were ignored and the halo took the
+    // text's own colour - invisible on a style whose text is already the glow's
+    // colour, and plainly wrong on any other. A & B Colors is 2.
     var tint = String(style.glowColor || "");
     if (tint) {
-      try { glow.property("Glow Colors").setValue(1); } catch (e4) { /* A & B Colors unsupported */ }
+      try {
+        glow.property("Glow Colors").setValue(2);
+      } catch (e4) {
+        // Some builds name the entry rather than take its index.
+        try { glow.property("Glow Colors").setValue("A & B Colors"); } catch (e7) { /* keep the default */ }
+      }
       try { glow.property("Color A").setValue(lcp_hexToRgb(tint)); } catch (e5) { /* ignore */ }
       try { glow.property("Color B").setValue(lcp_hexToRgb(tint)); } catch (e6) { /* ignore */ }
     }

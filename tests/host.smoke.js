@@ -1079,6 +1079,44 @@ var padComp = 24 * compFactor;
 check("the bar's padding is the same fraction of the text on both sides",
   ratioGap(padPreview, padComp) < 1e-9,
   padPreview.toFixed(3) + "px vs " + padComp.toFixed(3) + "px");
+console.log("");
+console.log("the glow colour actually reaches the comp");
+
+// The mode is the part that matters: with Glow Colors on Original Colors, Color A
+// and Color B are ignored and the halo takes the text's own colour. This is the
+// check that would have caught a tinted swatch doing nothing in the comp.
+var tintComp = fakeCreateComp(1080, 1920, 10);
+var tintStyle = baseStyle({ applyGlow: true, glowAmount: 40, glowColor: "#ff0000", fill: "#ffffff", fontSize: 150 });
+runCreate(tintComp, two, tintStyle, true);
+var tintProps = tintComp.glowProps();
+
+check("the glow is switched to A and B colours, not the text's own colour",
+  tintProps["ADBE Glo2.Glow Colors"] === 2,
+  "Glow Colors = " + tintProps["ADBE Glo2.Glow Colors"] + " (1 is Original Colors, 2 is A & B)");
+
+var compTint = tintProps["ADBE Glo2.Color A"];
+check("the glow colour is written to the effect",
+  !!compTint && compTint.length === 3 && Math.round(compTint[0] * 255) === 255 &&
+  Math.round(compTint[1] * 255) === 0 && Math.round(compTint[2] * 255) === 0,
+  JSON.stringify(compTint));
+
+// Both sides, same colour: the preview builds a text-shadow from the setting, the
+// comp sets the effect. Read each side's own value back and compare them.
+var previewShadow = lcpPreview.glowShadow(18, { applyGlow: true, glowAmount: 40, glowColor: "#ff0000" });
+var hexInShadow = (previewShadow.match(/#[0-9a-fA-F]{3,6}/) || [])[0];
+check("the preview puts the same colour in its halo", hexInShadow === "#ff0000",
+  "preview shadow: " + previewShadow);
+if (hexInShadow && compTint) {
+  var shown = hexInShadow.replace("#", "");
+  if (shown.length === 3) shown = shown[0] + shown[0] + shown[1] + shown[1] + shown[2] + shown[2];
+  var wantR = parseInt(shown.substring(0, 2), 16) / 255;
+  var wantG = parseInt(shown.substring(2, 4), 16) / 255;
+  var wantB = parseInt(shown.substring(4, 6), 16) / 255;
+  check("the halo is the same colour on both sides",
+    Math.abs(compTint[0] - wantR) < 0.02 && Math.abs(compTint[1] - wantG) < 0.02 &&
+    Math.abs(compTint[2] - wantB) < 0.02,
+    JSON.stringify(compTint) + " vs " + hexInShadow);
+}
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
