@@ -1119,7 +1119,9 @@
     // land well after the speaker began. The transcriber reports where sound
     // actually starts. Clamp the segments first, so the captions, the preview and
     // the exported SRT all agree - clamping the cues alone left the SRT late.
+    var wasAt = (result.segments[0] && result.segments[0].startMs) || 0;
     var segments = root.LcpTranscript.clampFirstCue(result.segments, result.onsetMs);
+    var nowAt = (segments[0] && segments[0].startMs) || 0;
     var srt = root.LcpAuto.segmentsToSrt(segments);
     state.asr.cues = root.LcpAuto.segmentsToCues(segments);
     state.asr.srt = srt;
@@ -1147,7 +1149,11 @@
     setAutoStatus(
       result.segments.length + " cue(s), " + wordCount + " word timing(s), language " +
       (result.language || "unknown") + ", model " + (result.model || "?") +
-      (offsetNote ? ". " + offsetNote : "."),
+      (offsetNote ? ". " + offsetNote : ".") +
+      (wasAt > nowAt
+        ? " First caption pulled back from " + (wasAt / 1000).toFixed(2) + "s to " +
+          (nowAt / 1000).toFixed(2) + "s, to where the sound starts."
+        : ""),
       "ok"
     );
     setStatus("Transcript filled from the local transcription. Generate when ready.", "ok");

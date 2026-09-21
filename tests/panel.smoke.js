@@ -175,6 +175,9 @@ check("the clamp runs on the segments before the SRT and the cues are derived",
   /var segments = root\.LcpTranscript\.clampFirstCue\(result\.segments, result\.onsetMs\);/.test(js) &&
   /segmentsToSrt\(segments\)/.test(js) && /segmentsToCues\(segments\)/.test(js),
   "clamping the cues alone left the exported SRT late, which is what the panel showed");
+check("the status reports the pull so it is not a silent change",
+  /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
+  "a correction the user cannot see is indistinguishable from no correction");
 check("no path builds the SRT from the raw segments any more",
   !/segmentsToSrt\(result\.segments\)/.test(js));
 check("the transcriber reports the onset it measured",
