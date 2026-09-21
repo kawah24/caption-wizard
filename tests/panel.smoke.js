@@ -230,6 +230,23 @@ check("the list sits above the transcript box, not below it",
   html.indexOf('class="tips"') < html.indexOf('id="transcriptInput"'));
 check("the tips are styled so they read as help, not content",
   /\.tips \{/.test(fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8")));
+console.log("");
+console.log("the sample text is a demo, not a second copy of the tips");
+
+var sampleBlock = (js.match(/var SAMPLE_TEXT = \[([\s\S]*?)\]\.join/) || [])[1] || "";
+var tipsHtml = (html.match(/<ul class="tips">([\s\S]*?)<\/ul>/) || [])[1] || "";
+var tipSentences = (tipsHtml.match(/<li>[^<]*<\/li>/g) || []).map(function (s) {
+  return s.replace(/<\/?li>/g, "").replace(/\.$/, "");
+});
+var echoes = tipSentences.filter(function (t) { return sampleBlock.indexOf(t) >= 0; });
+check("the sample transcript does not repeat the tips above it",
+  echoes.length === 0, "repeated: " + echoes.join(" | "));
+check("the sample is an actual demo transcript",
+  /rain started/i.test(sampleBlock) && sampleBlock.split("\n").length >= 3,
+  "the sample should show what captions look like");
+check("the placeholder does not repeat them either",
+  !/placeholder="[^"]*One caption per line[^"]*"/.test(html),
+  "the tip itself contains that sentence, so scope this to the placeholder attribute");
 check("the status reports the pull so it is not a silent change",
   /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
   "a correction the user cannot see is indistinguishable from no correction");

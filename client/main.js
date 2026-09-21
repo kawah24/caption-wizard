@@ -30,10 +30,16 @@
 
   var el = {};
 
+  // The demo transcript. It used to hold the how-to lines, which the tips list above
+  // the box now says - pressing Sample repeated them back, which is the double the
+  // panel was showing. This is a real transcript instead, with a short line, a long
+  // one, punctuation for the sentence splitter, and a number worth emphasising.
+  // A check fails if it ever repeats a tip again.
   var SAMPLE_TEXT = [
-    "One caption per line.",
-    "Load an SRT to keep your own timecodes.",
-    "Pick a style, then generate."
+    "The rain started just after midnight.",
+    "By morning the whole street was quiet.",
+    "Nobody had seen a storm like it.",
+    "Not in forty years."
   ].join("\n");
 
   var LANGUAGES = [
