@@ -1115,12 +1115,13 @@
       return;
     }
 
-    var srt = root.LcpAuto.segmentsToSrt(result.segments);
-    // Whisper is conservative about its first segment, so an opening caption can
+    // Whisper places its first segment conservatively, so an opening caption can
     // land well after the speaker began. The transcriber reports where sound
-    // actually starts; pull the first cue back onto it.
-    state.asr.cues = root.LcpTranscript.clampFirstCue(
-      root.LcpAuto.segmentsToCues(result.segments), result.onsetMs);
+    // actually starts. Clamp the segments first, so the captions, the preview and
+    // the exported SRT all agree - clamping the cues alone left the SRT late.
+    var segments = root.LcpTranscript.clampFirstCue(result.segments, result.onsetMs);
+    var srt = root.LcpAuto.segmentsToSrt(segments);
+    state.asr.cues = root.LcpAuto.segmentsToCues(segments);
     state.asr.srt = srt;
     state.asr.language = result.language || null;
 

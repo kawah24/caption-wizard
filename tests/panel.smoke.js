@@ -171,9 +171,12 @@ check("the heading spans the grid rather than filling a cell",
 console.log("");
 console.log("the clamp is actually called, not just available");
 
-check("main.js pulls the first cue back with the reported onset",
-  /clampFirstCue\(\s*root\.LcpAuto\.segmentsToCues\(result\.segments\), result\.onsetMs\)/.test(js),
-  "the helper existed but nothing called it once already");
+check("the clamp runs on the segments before the SRT and the cues are derived",
+  /var segments = root\.LcpTranscript\.clampFirstCue\(result\.segments, result\.onsetMs\);/.test(js) &&
+  /segmentsToSrt\(segments\)/.test(js) && /segmentsToCues\(segments\)/.test(js),
+  "clamping the cues alone left the exported SRT late, which is what the panel showed");
+check("no path builds the SRT from the raw segments any more",
+  !/segmentsToSrt\(result\.segments\)/.test(js));
 check("the transcriber reports the onset it measured",
   /"onsetMs": detect_speech_onset/.test(fs.readFileSync(path.join(__dirname, "..", "tools", "transcribe.py"), "utf8")));
 console.log("saved styles");
