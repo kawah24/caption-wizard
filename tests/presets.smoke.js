@@ -278,6 +278,8 @@ check('the same caption always picks the same word, so the preview cannot flicke
 
 check('the card lets the line count be changed, since that is its whole look', pwPreset.controls.indexOf('lines') >= 0);
 
+check('the power word size can be pushed to 250%', /emphasisScale:[^}]*max: 250/.test(fs.readFileSync(path.join(__dirname, '..', 'client', 'presets.js'), 'utf8')));
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

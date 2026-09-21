@@ -850,7 +850,7 @@
       var pad = Math.max(1, Math.round((settings.boxPadding || 18) * factor));
       anchor.style.background = rgba(settings.boxColor || "#000000",
         (settings.boxOpacity === undefined ? 70 : settings.boxOpacity) / 100);
-      anchor.style.padding = pad + "px " + (pad * 1.4) + "px";
+      anchor.style.padding = pad + "px";
       anchor.style.borderRadius = "3px";
     } else {
       anchor.style.background = "";

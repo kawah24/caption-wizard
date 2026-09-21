@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.33"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.34"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.33";
+var LCP_VERSION = "1.8.34";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -637,7 +637,11 @@ function lcp_addPowerLines(comp, caption, style) {
   lines = applied.split(/\r\n?|\n/);
 
   var compScale = (comp.width > 0) ? (comp.width / 1920) : 1;
-  var step = (lcp_num(style.fontSize, 72) * compScale * 1.18) / Math.max(1, comp.height) * 100;
+  // The step is the taller of the two sizes, so every gap between lines is the same
+  // and a power word at 250% cannot collide with the line above it.
+  var emphasisSize = lcp_num(style.fontSize, 72) * (lcp_num(style.emphasisScale, 110) / 100);
+  var tallest = Math.max(lcp_num(style.fontSize, 72), emphasisSize);
+  var step = (tallest * compScale * 1.18) / Math.max(1, comp.height) * 100;
   var baseY = lcp_num(style.posY, 78);
   var start = lcp_num(caption.startMs, 0) / 1000;
   var end = lcp_num(caption.endMs, 1000) / 1000;

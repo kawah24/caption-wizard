@@ -1230,6 +1230,28 @@ var threeRes = runCreate(threeComp, [{
 }], threeStyle, true);
 check('a three line card draws three layers, the power line counted in', threeRes.created === 3, 'created: ' + threeRes.created);
 
+console.log("");
+console.log("the lines are spaced evenly, and room for the big word");
+
+var spaceComp = fakeCreateComp(1080, 1920, 10);
+var spaceStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+spaceStyle.emphasisScale = 250;
+var spaceRes = runCreate(spaceComp, [{
+  text: "because everything that I did myself", startMs: 0, endMs: 2000,
+  emphasis: [3],
+  words: [{ text: "because" }, { text: "everything" }, { text: "that" }, { text: "I" }, { text: "did" }, { text: "myself" }]
+}], spaceStyle, true);
+var ys = spaceComp.allLayers().map(function (l) {
+  return l._positions.length ? l._positions[l._positions.length - 1][1] : null;
+}).filter(function (y) { return y !== null; }).sort(function (a, b) { return a - b; });
+var gaps = [];
+for (var g = 1; g < ys.length; g++) gaps.push(Math.round(ys[g] - ys[g - 1]));
+check("every line gap is the same, so the padding reads equal",
+  gaps.length >= 2 && Math.max.apply(null, gaps) - Math.min.apply(null, gaps) <= 2,
+  "gaps: " + JSON.stringify(gaps));
+check("the gap is wide enough for a 250% word",
+  gaps.length > 0 && gaps[0] >= Math.round(150 * (1080 / 1920) * 2.5 * 1.1),
+  "gap " + (gaps.length ? gaps[0] : "none") + "px, a 250% word is " + Math.round(150 * (1080 / 1920) * 2.5) + "px");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

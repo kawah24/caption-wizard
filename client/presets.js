@@ -68,7 +68,7 @@
 
     emphasisWords: { label: "Power words (comma separated)", type: "text" },    emphasisAuto: { label: "Auto: numbers and SHOUTED words", type: "toggle" },
     emphasisColor: { label: "Power word colour", type: "color" },
-    emphasisScale: { label: "Power word size", type: "range", min: 100, max: 150, step: 2, unit: "%" },
+    emphasisScale: { label: "Power word size", type: "range", min: 100, max: 250, step: 2, unit: "%" },
     wordByWord: { label: "One word at a time", type: "toggle" },
     karaokeHighlight: { label: "Highlight", type: "color" },
     karaokeDim: { label: "Base words", type: "color" },
