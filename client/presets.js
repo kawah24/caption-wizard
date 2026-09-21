@@ -140,7 +140,7 @@
   var WORD_CONTROLS = [
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-    "tracking", "transform", "align", "posX", "posY",
+    "tracking", "transform", "align", "posX", "posY", "splitBySentence",
     "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
     "inDurMs", "outDurMs"
   ];
@@ -273,7 +273,7 @@
       motion: "popIn",
       previewLine: "boxed caption",
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
-                 "strokeWidth", "applyShadow", "tracking", "transform", "lines", "align", "posX", "posY",
+                 "strokeWidth", "applyShadow", "tracking", "transform", "lines", "align", "posX", "posY", "splitBySentence",
                  "applyBox", "boxColor", "boxOpacity", "boxPadding"],
       defaults: {
         fontSize: 150, fill: "#ffffff", applyStroke: false, applyBox: true,

@@ -212,6 +212,10 @@ for (var p = 0; p < presets.length; p++) {
 }
 
 console.log("");
+check("every style offers the sentence split",
+  P.PRESETS.every(function (p) { return (p.controls || []).indexOf("splitBySentence") >= 0; }),
+  P.PRESETS.filter(function (p) { return (p.controls || []).indexOf("splitBySentence") < 0; })
+    .map(function (p) { return p.id; }).join(", "));
 console.log("the neon styles ship with a glow");
 
 ["neon", "neon-karaoke"].forEach(function (id) {
