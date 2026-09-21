@@ -14,8 +14,13 @@
 
   var cs = new root.CSInterfaceLite();
 
+  // The panel always opens on this card, at its own settings. Per-card tuning is a
+  // scratch pad for the card you are on: switch away and back and the card's own
+  // settings are shown again, and none of it is restored on the next launch.
+  var DEFAULT_PRESET_ID = "karaoke";
+
   var state = {
-    presetId: "karaoke",
+    presetId: DEFAULT_PRESET_ID,
     overrides: {},   // { presetId: { controlKey: value } }
     timing: {},
     hostReady: false,
@@ -471,6 +476,7 @@
           selected: preset.id === state.presetId,
           onSelect: function (id) {
             state.presetId = id;
+            state.overrides[id] = {};   // a card always shows its own settings
             renderStyleGrid();
             renderStage();
             renderSettings();
@@ -506,31 +512,29 @@
   }
 
   /**
-   * Persist the panel's editing session: the per-style overrides, the selected
-   * style and the saved styles. Called after every change, so a reopened panel
-   * is where the user left it.
+   * Persist the saved styles, and nothing else.
+   *
+   * The editing session used to be restored too, so a reopened panel was where you
+   * left it. The panel now always opens on the default card at its own settings,
+   * which means there is no session to restore - per-card tuning applies to the card
+   * you are on and is gone when you leave it.
    */
   function saveSession() {
-    storeJSON(STORE_KEYS.overrides, state.overrides);
-    storeJSON(STORE_KEYS.selection, state.presetId);
     storeJSON(STORE_KEYS.custom, state.customStyles);
   }
 
   /**
-   * Restore a saved session. A selection that is neither a built-in nor a saved
-   * style falls back to the default.
+   * Restore the saved styles, and nothing else.
+   *
+   * The selection and the per-card overrides are deliberately left alone: every
+   * launch starts on the default card with that card's own settings.
    */
   function loadSession() {
-    var overrides = readJSON(STORE_KEYS.overrides, null);
-    if (overrides && typeof overrides === "object") state.overrides = overrides;
-
     state.customStyles = readJSON(STORE_KEYS.custom, []) || [];
     if (!(state.customStyles instanceof Array)) state.customStyles = [];
 
-    var selection = readJSON(STORE_KEYS.selection, state.presetId);
-    var known = root.LcpPresets.getPreset(selection) ||
-      state.customStyles.some(function (s) { return s.name === selection; });
-    if (known && typeof selection === "string") state.presetId = selection;
+    state.presetId = DEFAULT_PRESET_ID;
+    state.overrides = {};
   }
 
   /**
@@ -588,7 +592,7 @@
   function deleteCustomStyle(id) {
     state.customStyles = state.customStyles.filter(function (s) { return s.name !== id; });
     delete state.overrides[id];
-    state.presetId = "karaoke";
+    state.presetId = DEFAULT_PRESET_ID;
     saveSession();
     renderStyleGrid();
     renderStage();

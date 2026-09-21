@@ -370,6 +370,22 @@ console.log("styling for the markup");
 });
 
 console.log("");
+console.log("");
+console.log("the panel opens on the default card, at that card's own settings");
+
+check("the default card is karaoke", /var DEFAULT_PRESET_ID = "karaoke";/.test(js));
+check("the state starts on it", /presetId: DEFAULT_PRESET_ID/.test(js));
+check("a launch does not restore a selection or any tuning",
+  !/readJSON\(STORE_KEYS\.selection/.test(js) && !/readJSON\(STORE_KEYS\.overrides/.test(js),
+  "restoring either would reopen the panel mid-edit instead of on the default card");
+check("and it does not persist them either",
+  !/storeJSON\(STORE_KEYS\.selection/.test(js) && !/storeJSON\(STORE_KEYS\.overrides/.test(js));
+check("choosing a shipped card clears whatever that card had",
+  /onSelect: function \(id\) \{\s*state\.presetId = id;\s*state\.overrides\[id\] = \{\};/.test(js),
+  "the sweep over the shipped styles must clear, not inherit");
+check("the saved styles still come back, since they are the user's own",
+  /storeJSON\(STORE_KEYS\.custom, state\.customStyles\)/.test(js) &&
+  /state\.customStyles = readJSON\(STORE_KEYS\.custom, \[\]\)/.test(js));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
