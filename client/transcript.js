@@ -376,6 +376,27 @@
     }
     return out;
   }
+  /**
+   * How many text layers a plan will create.
+   *
+   * Word-per-word styles make one layer per word, and a style with a glow adds a
+   * backdrop behind every one of them. The panel prints this before generating,
+   * because the number is not obvious and it is the thing that surprises people.
+   */
+  function estimateLayers(captions, options) {
+    var opts = options || {};
+    var perWord = !!(opts.karaoke || opts.wordByWord);
+    var count = 0;
+    var i, c;
+
+    for (i = 0; i < captions.length; i++) {
+      c = captions[i];
+      if (perWord && c.words && c.words.length) count += c.words.length;
+      else count += 1;
+    }
+    if (opts.applyGlow) count *= 2;      // a backdrop behind every text layer
+    return count;
+  }
   /** Wrap an over-long cue into several evenly-timed cues. */
   function wrapLongCues(cues, maxWords) {
     var wrapped = [];
@@ -513,6 +534,7 @@
   root.LcpTranscript = {
     DEFAULTS: DEFAULTS,
     planCaptions: planCaptions,
+  estimateLayers: estimateLayers,
     planFromCues: planFromCues,
     pickPreviewCaption: pickPreviewCaption,
     splitIntoLines: splitIntoLines,

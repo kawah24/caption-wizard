@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.5.4"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.6.0"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.5.4";
+var LCP_VERSION = "1.6.0";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -1008,7 +1008,16 @@ function lcp_buildTextDocument(textLayer, style) {
 
   doc.fontSize = lcp_num(style.fontSize, 72) * sizeScale;
 
-  try { doc.tracking = lcp_num(style.tracking, 0); } catch (errTrack) { /* older AE */ }
+    // A centred stroke eats half its width out of the gap on each side of a glyph,
+  // which is what closes letters up at heavy outlines. Adding half the stroke
+  // width back to the tracking restores the spacing the preview shows. Both use
+  // 1/1000 em, so the same number means the same thing to each.
+  var trackValue = lcp_num(style.tracking, 0);
+  var strokeDrawn = (style.applyStroke || style.filled === false);
+  if (strokeDrawn && style.autoSpaceOutline !== false) {
+    trackValue += (lcp_num(style.strokeWidth, 6) / 2) / Math.max(1, lcp_num(style.fontSize, 72)) * 1000;
+  }
+  try { doc.tracking = trackValue; } catch (errTrack) { /* older AE */ }
 
   // "Outline Only" presets switch the fill off, which also forces the stroke on.
   var wantStroke = !!style.applyStroke || style.filled === false;
@@ -1364,6 +1373,12 @@ function lcp_create(payloadJson) {
       warnings.push("Drop shadow: the effect was not added to any layer.");
     } else if (_lcpEffectLog.shadow && _lcpEffectLog.shadow.ok === 0 && _lcpEffectLog.shadow.failed > 0) {
       warnings.push("Drop shadow: the effect could not be added (" + _lcpEffectLog.shadow.failed + " layer(s)).");
+    }
+    if (style.motion === "blurFade" && _lcpEffectLog.blur && _lcpEffectLog.blur.failed > 0) {
+      warnings.push("Blur: the effect could not be added (" + _lcpEffectLog.blur.failed + " layer(s)).");
+    }
+    if (style.motion === "neon" && _lcpEffectLog.brightness && _lcpEffectLog.brightness.failed > 0) {
+      warnings.push("Brightness: the effect could not be added (" + _lcpEffectLog.brightness.failed + " layer(s)).");
     }
     if (style.applyGlow && !_lcpEffectLog.glow) {
       warnings.push("Glow: the effect was not added to any layer.");

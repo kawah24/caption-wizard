@@ -274,6 +274,23 @@
   }
 
   /**
+   * The extra tracking a centred outline needs, in 1/1000 em.
+   *
+   * After Effects strokes each glyph centred on its edge, so half the stroke eats
+   * into the gap on either side and heavy outlines close the letters up. Adding
+   * half the stroke width back as tracking gives the spacing back. The unit is the
+   * same 1/1000 em the setting uses, so this number means the same thing to the
+   * preview and to the host.
+   */
+  function autoTracking(settings) {
+    if (!settings || settings.autoSpaceOutline === false) return 0;
+    if (!(settings.applyStroke || settings.filled === false)) return 0;
+    var width = (settings.strokeWidth === undefined) ? 6 : settings.strokeWidth;
+    var size = (settings.fontSize === undefined) ? 72 : settings.fontSize;
+    return (width / 2) / Math.max(1, size) * 1000;
+  }
+
+  /**
    * Outline width for the preview, in preview pixels.
    *
    * The same rule the host applies to the comp: the style's width scaled by the
@@ -462,7 +479,8 @@
     label.style.textTransform = transform === "uppercase" ? "uppercase"
       : (transform === "lowercase" ? "lowercase" : "none");
 
-    label.style.letterSpacing = (((settings.tracking || 0) / 1000) * (settings.fontSize || 72) * factor) + "px";
+    var spacing = ((settings.tracking || 0) + autoTracking(settings)) / 1000;
+    label.style.letterSpacing = (spacing * (settings.fontSize || 72) * factor) + "px";
 
     // Drop shadow and glow are approximated with text-shadow layers. Their
     // geometry is derived from the RENDERED font size, not from the comp-to-
@@ -634,6 +652,15 @@
     // one style's oversized text would overflow every other card.
     var frame = buildPreview(preset, { settings: options.settings });
     card.appendChild(frame);
+
+    var mode = preset.karaoke ? "Karaoke"
+      : ((preset.defaults && (preset.defaults.wordByWord || preset.defaults.forceWordByWord)) || preset.motion === "wordPunch") ? "Word by word" : "";
+    if (mode) {
+      var badge = document.createElement("span");
+      badge.className = "style-card-tag";
+      badge.textContent = mode;
+      card.appendChild(badge);
+    }
 
     var name = document.createElement("div");
     name.className = "style-card-name";
@@ -857,6 +884,7 @@
     glowRadii: glowRadii,
     glowShadow: glowShadow,
     strokePx: strokePx,
+    autoTracking: autoTracking,
     outlineShadow: outlineShadow,
     resolvePreviewFont: resolvePreviewFont,
     applyLineBreaks: applyLineBreaks,

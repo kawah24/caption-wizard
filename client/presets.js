@@ -53,6 +53,7 @@
     },
     maxWords: { label: "Max words per caption", type: "range", min: 1, max: 14, step: 1 },
     splitBySentence: { label: "Split captions by sentence", type: "toggle" },
+    autoSpaceOutline: { label: "Auto-space for outline", type: "toggle" },
     align: { label: "Align", type: "select", options: ["left", "center", "right"] },
     posX: { label: "Horizontal", type: "range", min: 0, max: 100, step: 1, unit: "%" },
     posY: { label: "Vertical", type: "range", min: 0, max: 100, step: 1, unit: "%" },
@@ -98,6 +99,7 @@
     lines: "1",
     maxWords: 3,
     splitBySentence: false,
+    autoSpaceOutline: true,
     align: "center",
     posX: 50,
     posY: 78,
@@ -128,7 +130,7 @@
   var PLAIN_CONTROLS = [
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-    "tracking", "transform", "lines", "maxWords", "splitBySentence", "align", "posX", "posY",
+    "tracking", "transform", "lines", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY",
     "inDurMs", "outDurMs"
   ];
 
@@ -140,7 +142,7 @@
   var WORD_CONTROLS = [
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-    "tracking", "transform", "align", "posX", "posY", "splitBySentence",
+    "tracking", "transform", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
     "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
     "inDurMs", "outDurMs"
   ];
@@ -156,7 +158,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "align", "posX", "posY", "inDurMs", "outDurMs"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true,
         strokeColor: "#000000", strokeWidth: 8, transform: "uppercase", posY: 76,
@@ -187,7 +189,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "align", "posX", "posY", "inDurMs", "outDurMs"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff4df0", karaokeDim: "#8ef7ff", karaokePop: true,
         strokeColor: "#1b2bff", strokeWidth: 12, transform: "uppercase", posY: 76,
@@ -203,7 +205,7 @@
       previewLine: "Clean and simple",
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
                  "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "lines", "maxWords", "splitBySentence", "align", "posX", "posY"],
+                 "tracking", "transform", "lines", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY"],
       defaults: { fontSize: 150, posY: 80, strokeWidth: 5 }
     },
     {
@@ -273,7 +275,7 @@
       motion: "popIn",
       previewLine: "boxed caption",
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
-                 "strokeWidth", "applyShadow", "tracking", "transform", "lines", "align", "posX", "posY", "splitBySentence",
+                 "strokeWidth", "applyShadow", "tracking", "transform", "lines", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
                  "applyBox", "boxColor", "boxOpacity", "boxPadding"],
       defaults: {
         fontSize: 150, fill: "#ffffff", applyStroke: false, applyBox: true,
@@ -376,7 +378,7 @@
       motion: "none",
       previewLine: "HOLLOW",
       controls: ["fontFamily", "fontSize", "bold", "applyStroke", "strokeColor", "strokeWidth",
-                 "tracking", "transform", "lines", "maxWords", "splitBySentence", "align", "posX", "posY"],
+                 "tracking", "transform", "lines", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY"],
       defaults: {
         fontSize: 150, filled: false, applyStroke: true, strokeColor: "#ffffff",
         strokeWidth: 6, transform: "uppercase", tracking: 20

@@ -206,7 +206,8 @@
 
     var seconds = plan.durationMs / 1000;
     var lines = [
-      plan.captions.length + " caption(s), " + words + " word(s)",
+      plan.captions.length + " caption(s), " + words + " word(s), ~" +
+        root.LcpTranscript.estimateLayers(plan.captions, currentSettings()) + " layer(s)",
       "total " + root.LcpTranscript.msToTime(plan.durationMs),
       timing.wpm + " wpm target",
       style.maxWords + " words per caption (style)",

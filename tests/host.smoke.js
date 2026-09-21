@@ -545,6 +545,29 @@ check("a plain caption settles with its box centred on the vertical position",
   Math.abs(settled[1] - (1080 * 0.78 + 10)) < 0.001, settled[1] + " vs " + (1080 * 0.78 + 10));
 
 console.log("");
+console.log("");
+console.log("the outline's auto-spacing matches on both sides");
+
+var spacingStyle = baseStyle({ applyStroke: true, strokeWidth: 40, fontSize: 150, applyGlow: false });
+var spacingComp = fakeCreateComp(1080, 1920, 10);
+runCreate(spacingComp, two, spacingStyle, true);
+var spacingLayer = spacingComp.allLayers()[0];
+var hostTracking = spacingLayer && spacingLayer._doc ? spacingLayer._doc.tracking : undefined;
+
+check("the host widens the tracking for a heavy outline",
+  typeof hostTracking === "number" && hostTracking > 100, String(hostTracking));
+check("it adds half the stroke width, in 1/1000 em",
+  Math.abs(hostTracking - (40 / 2) / 150 * 1000) < 0.01, String(hostTracking) + " vs " + ((40 / 2) / 150 * 1000).toFixed(2));
+check("the preview uses the same rule",
+  Math.abs(lcpPreview.autoTracking(spacingStyle) - hostTracking) < 0.01,
+  lcpPreview.autoTracking(spacingStyle).toFixed(2) + " vs " + hostTracking);
+check("switching it off adds nothing",
+  lcpPreview.autoTracking({ applyStroke: true, autoSpaceOutline: false, strokeWidth: 40, fontSize: 150 }) === 0);
+check("a caption with no outline is left alone",
+  lcpPreview.autoTracking({ applyStroke: false, strokeWidth: 40, fontSize: 150 }) === 0);
+check("a thicker outline needs more spacing",
+  lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 80, fontSize: 150 }) >
+  lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 40, fontSize: 150 }));
 console.log("the host reports where it actually put the caption");
 
 var placedComp = fakeCreateComp(1920, 1080, 10);

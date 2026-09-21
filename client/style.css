@@ -723,3 +723,17 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   text-transform: uppercase;
   color: var(--text-dim);
 }
+/* A card that makes one layer per word says so. */
+.style-card-tag {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  padding: 0 4px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+}

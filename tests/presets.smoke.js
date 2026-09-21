@@ -25,7 +25,7 @@ var HOST_KEYS = [
   "motion", "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke",
   "strokeColor", "strokeWidth", "applyShadow", "shadowColor", "shadowAmount",
   "applyGlow", "glowColor", "glowAmount",
-  "tracking", "transform", "lines", "maxWords",
+  "tracking", "transform", "lines", "maxWords", "autoSpaceOutline",
   "align", "posX", "posY", "applyBox", "boxColor", "boxOpacity", "boxPadding",
   "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
   "wordByWord", "inDurMs", "outDurMs",
