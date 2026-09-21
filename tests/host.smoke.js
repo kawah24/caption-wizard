@@ -1238,20 +1238,26 @@ var spaceStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_
 spaceStyle.emphasisScale = 250;
 var spaceRes = runCreate(spaceComp, [{
   text: "because everything that I did myself", startMs: 0, endMs: 2000,
-  emphasis: [3],
-  words: [{ text: "because" }, { text: "everything" }, { text: "that" }, { text: "I" }, { text: "did" }, { text: "myself" }]
+  emphasis: [5],
+  words: [{ text: "one" }, { text: "two" }, { text: "three" }, { text: "four" }, { text: "five" }, { text: "six" }]
 }], spaceStyle, true);
 var ys = spaceComp.allLayers().map(function (l) {
   return l._positions.length ? l._positions[l._positions.length - 1][1] : null;
 }).filter(function (y) { return y !== null; }).sort(function (a, b) { return a - b; });
 var gaps = [];
 for (var g = 1; g < ys.length; g++) gaps.push(Math.round(ys[g] - ys[g - 1]));
-check("every line gap is the same, so the padding reads equal",
-  gaps.length >= 2 && Math.max.apply(null, gaps) - Math.min.apply(null, gaps) <= 2,
+check("the plain lines sit closer together than the line holding the big word",
+  gaps.length >= 1 && gaps[0] < gaps[gaps.length - 1],
   "gaps: " + JSON.stringify(gaps));
-check("the gap is wide enough for a 250% word",
-  gaps.length > 0 && gaps[0] >= Math.round(150 * (1080 / 1920) * 2.5 * 1.1),
-  "gap " + (gaps.length ? gaps[0] : "none") + "px, a 250% word is " + Math.round(150 * (1080 / 1920) * 2.5) + "px");
+// The gap beside the big word is half of each neighbour's box, so it is about half the
+// big word plus half the small one - enough for them to sit next to each other without
+// touching, which is all a line gap has to do.
+var bigWordPx = Math.round(150 * (1080 / 1920) * 2.5);
+var smallBoxPx = Math.round(150 * (1080 / 1920) * 1.18);
+check("the line holding the big word gets the room it needs",
+  gaps.length >= 1 && gaps[gaps.length - 1] >= Math.round(bigWordPx / 2 + smallBoxPx / 4),
+  "gap beside the big word " + (gaps.length ? gaps[gaps.length - 1] : "none") +
+  "px, half of a " + bigWordPx + "px word is " + Math.round(bigWordPx / 2) + "px");
 console.log("");
 console.log("the padding slider actually spaces the lines");
 
@@ -1274,8 +1280,10 @@ var tight = gapFor(0);
 var loose = gapFor(50);
 check("a bigger padding makes a bigger gap between lines",
   loose > tight, "padding 0 -> " + tight + "px, padding 50 -> " + loose + "px");
-check("and zero padding still leaves room for a 250% word",
-  tight >= Math.round(150 * 2.5 * (1080 / 1920)), "gap " + tight + "px, the word is " + Math.round(150 * 2.5 * (1080 / 1920)) + "px");
+// Zero padding is the tightest the lines ever get, and even then the big word's own
+// line is tall enough to hold it.
+check("at zero padding the lines still do not collide",
+  tight > 0 && tight >= Math.round(150 * (1080 / 1920) * 1.18 / 2), "tightest gap " + tight + "px");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

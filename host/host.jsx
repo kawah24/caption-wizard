@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.35"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.36"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.35";
+var LCP_VERSION = "1.8.36";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -637,15 +637,25 @@ function lcp_addPowerLines(comp, caption, style) {
   lines = applied.split(/\r\n?|\n/);
 
   var compScale = (comp.width > 0) ? (comp.width / 1920) : 1;
-  // The step is the taller of the two sizes, so every gap between lines is the same
-  // and a power word at 250% cannot collide with the line above it.
-  var emphasisSize = lcp_num(style.fontSize, 72) * (lcp_num(style.emphasisScale, 110) / 100);
-  var tallest = Math.max(lcp_num(style.fontSize, 72), emphasisSize);
+
+  // Each line takes the room its own text needs. Spacing every gap by the largest word
+  // on the caption left the small lines floating apart, which reads as too much
+  // padding however far the slider is turned down.
+  var baseSize = lcp_num(style.fontSize, 72);
+  var emphasisSize = baseSize * (lcp_num(style.emphasisScale, 110) / 100);
   // The leading the text needs, plus whatever padding is asked for on top - the
   // padding adds to the room the line takes, it does not replace it.
   var leading = 1.18 + lcp_num(style.linePadding, 18) / 100;
-  var step = (tallest * compScale * leading) / Math.max(1, comp.height) * 100;
-  var baseY = lcp_num(style.posY, 78);
+  var lineHeights = [];
+  var totalHeight = 0;
+  var hi;
+  for (hi = 0; hi < lines.length; hi++) {
+    var sizePx = lineIsPower[hi] ? emphasisSize : baseSize;
+    var heightPct = (sizePx * compScale * leading) / Math.max(1, comp.height) * 100;
+    lineHeights.push(heightPct);
+    totalHeight += heightPct;
+  }
+  var cursorY = lcp_num(style.posY, 78) - totalHeight / 2;
   var start = lcp_num(caption.startMs, 0) / 1000;
   var end = lcp_num(caption.endMs, 1000) / 1000;
 
@@ -661,7 +671,8 @@ function lcp_addPowerLines(comp, caption, style) {
     var isPower = !!lineIsPower[i];
 
     var lineStyle = isPower ? lcp_emphasisStyle(style) : lcp_copyStyle(style);
-    lineStyle.posY = baseY + (i - (lines.length - 1) / 2) * step;
+    lineStyle.posY = cursorY + lineHeights[i] / 2;
+    cursorY += lineHeights[i];
 
     var added = lcp_addLayer(comp, line, start, end, lineStyle, true);
     total.text += added.text;
