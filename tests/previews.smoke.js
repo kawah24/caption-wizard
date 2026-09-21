@@ -210,6 +210,20 @@ check("a zero width draws nothing",
 check("a filled caption never gets a centred stroke",
   !/webkitTextStroke = strokeWidthPx/.test(source) ||
   /outlineOnly/.test(source));
+check("the outline is added to the shadow list before that list is applied",
+  (function () {
+    var add = source.indexOf("effects.unshift(outlineShadow(");
+    var apply = source.indexOf("label.style.textShadow = effects.join");
+    return add > 0 && apply > 0 && add < apply;
+  })(),
+  "it was unshifted after the list had already reached the element, so nothing showed");
+check("the glow is pushed into the same list, not applied separately",
+  (function () {
+    var glow = source.indexOf("var glow = glowShadow(renderedSize, settings)");
+    var push = source.indexOf("if (glow) effects.push(glow)");
+    var apply = source.indexOf("label.style.textShadow = effects.join");
+    return glow > 0 && push > glow && apply > push;
+  })());
 check("a filled caption uses the shadow outline, never a centred stroke",
   /outlineShadow\(strokeWidthPx/.test(source) &&
   /var outlineOnly = \(settings\.filled === false\)/.test(source));

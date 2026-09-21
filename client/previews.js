@@ -469,15 +469,34 @@
     // preview scale: scaling a shadow by 0.22 turns a 3px offset into 1px, which
     // is invisible. The host uses the same ratios, so the preview stays honest.
     var effects = [];
+    var strokeWidthPx = strokePx(settings.strokeWidth, factor);
+    var outlineOnly = (settings.filled === false);
+
     if (settings.applyShadow) {
       var shadowAlpha = 0.85 * ((settings.shadowAmount === undefined ? 55 : settings.shadowAmount) / 100);
-      var offset = Math.max(2, Math.round(renderedSize * 0.10));
-      var blur = Math.max(4, Math.round(renderedSize * 0.25));
-      effects.push(Math.round(offset * 0.7) + "px " + offset + "px " + blur + "px " +
+      var shadowOffset = Math.max(2, Math.round(renderedSize * 0.10));
+      var shadowBlur = Math.max(4, Math.round(renderedSize * 0.25));
+      effects.push(Math.round(shadowOffset * 0.7) + "px " + shadowOffset + "px " + shadowBlur + "px " +
         rgba(settings.shadowColor || "#000000", shadowAlpha));
     }
+
     var glow = glowShadow(renderedSize, settings);
     if (glow) effects.push(glow);
+
+    if (settings.applyStroke && !outlineOnly) {
+      // Drawn as shadows, so the outline sits outside the letters rather than
+      // eating into them. Unshifted: CSS paints the first shadow on top, and the
+      // outline has to be closer to the glyph than the glow is.
+      effects.unshift(outlineShadow(strokeWidthPx, settings.strokeColor || "#000000"));
+    } else if (outlineOnly) {
+      // Nothing to hide the inner half behind, so this has to be a real stroke.
+      // It reads slightly centred - a limit of CSS and After Effects alike.
+      label.style.webkitTextStroke = strokeWidthPx.toFixed(2) + "px " +
+        (settings.strokeColor || "#000000");
+    } else {
+      label.style.webkitTextStroke = "0";
+    }
+    label.style.paintOrder = "";
     label.style.textShadow = effects.join(", ");
 
     applyLineBreaks(label, settings);
@@ -491,23 +510,6 @@
     } else {
       label.style.webkitTextFillColor = "";
     }
-
-    var strokeWidthPx = strokePx(settings.strokeWidth, factor);
-    var outlineOnly = (settings.filled === false);
-    if (settings.applyStroke && !outlineOnly) {
-      // Drawn as shadows, so the outline sits outside the letters rather than
-      // eating into them. Placed first in the list, which CSS paints on top.
-      effects.unshift(outlineShadow(strokeWidthPx, settings.strokeColor || "#000000"));
-      label.style.webkitTextStroke = "0";
-    } else if (outlineOnly) {
-      // Nothing to hide the inner half behind, so this has to be a real stroke.
-      // It reads slightly centred - a limit of CSS and After Effects alike.
-      label.style.webkitTextStroke = strokeWidthPx.toFixed(2) + "px " +
-        (settings.strokeColor || "#000000");
-    } else {
-      label.style.webkitTextStroke = "0";
-    }
-    label.style.paintOrder = "";
 
     // Karaoke colours travel as custom properties so the keyframes pick them up.
     if (preset && preset.karaoke) {
