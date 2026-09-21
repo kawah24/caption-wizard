@@ -94,6 +94,17 @@
         word.textContent = wordTexts[i];
         word.style.animationDelay = (i * step) + "s";
         word.style.animationDuration = cycle + "s";
+
+        // Word-per-word looks put one word on screen at a time in the comp, where
+        // every word is its own layer. On a card the label animates as a whole,
+        // which cannot show that - so the spans pop in turn instead, using the
+        // delays already set above.
+        if (preset && preset.motion === "wordPunch") {
+          word.style.animationName = "lcpWordPunch";
+          word.style.animationIterationCount = "infinite";
+          word.style.animationTimingFunction = "steps(1, end)";
+        }
+
         label.appendChild(word);
         if (i < wordTexts.length - 1) {
           label.appendChild(document.createTextNode(" "));

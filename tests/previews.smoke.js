@@ -164,6 +164,9 @@ check("the stylesheet centres a card's caption",
 check("a card keeps the stylesheet's readable size",
   !/function applyCardStyle[\s\S]{0,700}applyTextStyle/.test(source),
   "cards are a picker, so they do not scale type with the comp");
+check("word-per-word cards animate their words, not just the line",
+  /preset\.motion === "wordPunch"/.test(source) &&
+  /word\.style\.animationName = "lcpWordPunch"/.test(source));
 check("a card shows its preset's glow",
   /glowShadow\(CARD_TEXT_PX, settings\)/.test(source));
 check("the cards wait for layout before scaling",
