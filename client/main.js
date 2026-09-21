@@ -567,6 +567,61 @@
     setStatus('Removed "' + id + '".', "ok");
   }
 
+  /**
+   * The current style as portable text.
+   *
+   * A saved style is a name, the style it was built on and its settings. That is
+   * all a second machine needs, so this is the whole payload - no files, no paths,
+   * nothing that only makes sense on this computer.
+   */
+  function exportCurrentStyle() {
+    var entry = customStyleEntry(state.presetId);
+    return JSON.stringify({
+      captionWizard: 1,
+      name: entry ? entry.name : (state.presetId + " copy"),
+      base: entry ? entry.base : state.presetId,
+      overrides: state.overrides[state.presetId] || {}
+    }, null, 2);
+  }
+
+  /** Add a style from portable text, renaming if the name is taken. */
+  function importStyle(text) {
+    var data;
+    try {
+      data = JSON.parse(String(text || ""));
+    } catch (err) {
+      setStatus("That does not look like a style - paste the whole thing.", "error");
+      return false;
+    }
+    if (!data || typeof data !== "object" || !data.overrides) {
+      setStatus("That text is missing the settings, so there is nothing to import.", "error");
+      return false;
+    }
+
+    var base = data.base || "karaoke";
+    if (!root.LcpPresets.PRESETS.some(function (p) { return p.id === base; })) {
+      setStatus('The style it was built on ("' + base + '") is not in this panel.', "error");
+      return false;
+    }
+
+    var name = String(data.name || "Imported style").replace(/^\s+|\s+$/g, "") || "Imported style";
+    var unique = name;
+    var n = 2;
+    while (root.LcpPresets.PRESETS.some(function (p) { return p.id === unique; }) || customStyleEntry(unique)) {
+      unique = name + " " + n;
+      n++;
+    }
+
+    state.customStyles.push({ name: unique, base: base, overrides: data.overrides });
+    state.overrides[unique] = state.customStyles[state.customStyles.length - 1].overrides;
+    state.presetId = unique;
+    saveSession();
+    renderStyleGrid();
+    renderStage();
+    renderSettings();
+    setStatus('Imported "' + unique + '"' + (unique === name ? "" : ' (renamed, the name was taken)') + ".", "ok");
+    return true;
+  }
   function resetStyle() {
     var preset = activePreset();
 
@@ -1252,6 +1307,9 @@
     el.replacePrevious = byId("replacePrevious");
     el.saveStyleBtn = byId("saveStyleBtn");
     el.customStyleName = byId("customStyleName");
+    el.styleIO = byId("styleIO");
+    el.exportStyleBtn = byId("exportStyleBtn");
+    el.importStyleBtn = byId("importStyleBtn");
     el.status = byId("status");
     el.cepBanner = byId("cepBanner");
     el.srtFile = byId("srtFile");
@@ -1324,6 +1382,15 @@
       if (!saveCustomStyle(el.customStyleName.value)) return;
       el.customStyleName.value = "";
     };
+    el.exportStyleBtn.onclick = function () {
+      el.styleIO.value = exportCurrentStyle();
+      el.styleIO.select();
+      setStatus("The current style is in the box - copy it somewhere safe.", "ok");
+    };
+    el.importStyleBtn.onclick = function () {
+      if (importStyle(el.styleIO.value)) el.styleIO.value = "";
+    };
+
     el.customStyleName.onkeydown = function (event) {
       if (event && (event.key === "Enter" || event.keyCode === 13)) {
         if (!saveCustomStyle(el.customStyleName.value)) return;
@@ -1365,7 +1432,9 @@
       loadSession: loadSession,
       saveCustomStyle: saveCustomStyle,
       deleteCustomStyle: deleteCustomStyle,
-      customStyles: function () { return state.customStyles; }
+      customStyles: function () { return state.customStyles; },
+      exportCurrentStyle: exportCurrentStyle,
+      importStyle: importStyle
     };
   }
 

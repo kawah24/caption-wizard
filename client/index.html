@@ -49,6 +49,17 @@
             <button id="resetStyleBtn" class="btn" type="button"
                     title="Restore this style's settings to their defaults">Reset</button>
           </div>
+          <details class="io-row">
+            <summary>Back up or share a style</summary>
+            <textarea id="styleIO" spellcheck="false"
+                      placeholder="Copy this out to keep a style, or paste one in and press Import."></textarea>
+            <div class="row">
+              <button id="exportStyleBtn" class="btn" type="button"
+                      title="Put the current style in the box above so it can be copied">Copy current</button>
+              <button id="importStyleBtn" class="btn" type="button"
+                      title="Add the style in the box above to the grid">Import</button>
+            </div>
+          </details>
           <div class="row save-row">
             <input type="text" id="customStyleName" placeholder="name this style" />
             <button id="saveStyleBtn" class="btn" type="button"

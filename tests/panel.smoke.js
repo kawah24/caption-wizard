@@ -143,6 +143,17 @@ check("it does not re-enumerate fonts", focusHandler.indexOf("loadFonts") < 0);
 console.log("");
 console.log("");
 console.log("");
+console.log("");
+console.log("a style can be backed up and brought back");
+
+check("export writes a portable payload", /captionWizard: 1,/.test(js) && /overrides: state\.overrides/.test(js));
+check("import refuses text that is not a style",
+  /does not look like a style/.test(js) && /missing the settings/.test(js));
+check("import refuses a style built on a preset this panel does not have",
+  /is not in this panel/.test(js));
+check("import renames rather than overwriting", /the name was taken/.test(js));
+check("the box and both buttons exist",
+  /id="styleIO"/.test(html) && /id="exportStyleBtn"/.test(html) && /id="importStyleBtn"/.test(html));
 console.log("saved styles sit in their own section");
 
 check("the grid builds a Custom heading", /heading\.textContent = "Custom"/.test(js));

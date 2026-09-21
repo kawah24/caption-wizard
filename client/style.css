@@ -737,3 +737,27 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   border: 1px solid var(--line);
   border-radius: 3px;
 }
+/* ---------- backing a style up ---------- */
+
+.io-row { margin: 2px 0 6px; }
+
+.io-row summary {
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.io-row textarea {
+  width: 100%;
+  min-height: 84px;
+  margin: 6px 0;
+  font: 11px monospace;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 6px;
+  resize: vertical;
+}
