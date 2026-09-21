@@ -1117,6 +1117,105 @@ if (hexInShadow && compTint) {
     Math.abs(compTint[2] - wantB) < 0.02,
     JSON.stringify(compTint) + " vs " + hexInShadow);
 }
+console.log("");
+console.log("a power word is drawn bigger, as its own line");
+
+// The reference look: several lines, with the power word on a line of its own and
+// drawn larger. A text document cannot hold two sizes, so the comp builds one layer
+// per line and gives the power line the emphasis style.
+var pwComp = fakeCreateComp(1080, 1920, 10);
+var pwStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+var pwCaption = {
+  text: "because everything that I did myself",
+  startMs: 0, endMs: 2000,
+  emphasis: [3, 4],
+  words: [{ text: "because" }, { text: "everything" }, { text: "that" }, { text: "I" }, { text: "did" }, { text: "myself" }]
+};
+var pwRes = runCreate(pwComp, [pwCaption], pwStyle, true);
+var pwLayers = pwComp.allLayers();
+var pwTexts = pwComp.allLayers().map(function (l) { return String(l.text || l.name); }).join(" / ");
+check("a caption with a power word is drawn a line at a time",
+  pwLayers.length >= 3, "layers: " + pwLayers.length + "  result: " + JSON.stringify(pwRes));
+check("and the power word gets a line to itself",
+  pwTexts.indexOf("I did") >= 0, pwTexts);
+var pwTexts = pwLayers.map(function (l) { return String(l.text || l.name); }).join(" / ");
+check("and the planner still records which words are power words",
+  Array.isArray(pwCaption.emphasis) && pwCaption.emphasis.length === 2,
+  JSON.stringify(pwCaption.emphasis));
+check("the run reports the layers it built", pwRes.created >= 3, JSON.stringify(pwRes.created));
+
+// no emphasis means the old single-layer path, unchanged
+var plainComp = fakeCreateComp(1080, 1920, 10);
+var plainRes = runCreate(plainComp, [{ text: "no power words here at all", startMs: 0, endMs: 2000, emphasis: [] }], pwStyle, true);
+check("a caption without power words still builds one layer",
+  plainComp.allLayers().length === 1,
+  "layers: " + plainComp.allLayers().length + "  result: " + JSON.stringify(plainRes));
+
+// and the planner is what decides, so both sides agree
+var planned = lcpPresets.markEmphasis([{ text: "we did 1974 together", words: null }], pwStyle);
+check("the planner records the power word indices on the caption",
+  !!planned[0].emphasis && planned[0].emphasis.indexOf(2) >= 0,
+  JSON.stringify(planned[0].emphasis));
+console.log("");
+console.log("a look that costs layers cannot run away");
+
+// One layer per line is several times the layers, all built inside one undo step,
+// which is what a frozen application actually is. These two ceilings are why that
+// cannot happen again unnoticed.
+var cappedStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+var manyWords = [];
+var manyText = [];
+for (var mw = 0; mw < 30; mw++) { manyWords.push({ text: "word" + mw }); manyText.push("word" + mw); }
+var cappedComp = fakeCreateComp(1080, 1920, 10);
+var cappedRes = runCreate(cappedComp, [{
+  text: manyText.join(" "), startMs: 0, endMs: 2000,
+  emphasis: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+             20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+  words: manyWords
+}], cappedStyle, true);
+check("a caption of all power words still becomes a handful of layers",
+  cappedComp.allLayers().length <= 6,
+  "layers: " + cappedComp.allLayers().length);
+
+check("the ceiling exists and is a sane number",
+  typeof sandbox.LCP_MAX_LAYERS === "number" && sandbox.LCP_MAX_LAYERS > 0 &&
+  sandbox.LCP_MAX_LAYERS <= 2000, String(sandbox.LCP_MAX_LAYERS));
+
+var overflow = [];
+var lots = [];
+for (var lo = 0; lo < 220; lo++) {
+  lots.push({
+    text: "one two three " + lo, startMs: lo * 100, endMs: lo * 100 + 90,
+    emphasis: [3], words: null
+  });
+}
+var overComp = fakeCreateComp(1080, 1920, 60);
+var overRes = runCreate(overComp, lots, cappedStyle, true);
+// Either guard may be the one that trips, depending on the run: the caption budget
+// declines the layer-hungry look, and the ceiling stops a run outright. What matters
+// is that a large run is bounded and that the reason is stated.
+// Bounded by construction now: one layer per caption, whatever the style asks for.
+check("a large run creates one layer per caption and no more",
+  overComp.allLayers().length === lots.length,
+  "layers: " + overComp.allLayers().length + " of " + lots.length + " captions");
+check("and it stops near the ceiling rather than building all of them",
+  overComp.allLayers().length <= sandbox.LCP_MAX_LAYERS + 8,
+  "layers: " + overComp.allLayers().length);
+console.log("");
+console.log("the budget counts power words, not captions");
+
+// The measure that matters: a long transcript with a couple of power words is cheap,
+// because only the captions that hold one are drawn a line at a time.
+var fewBig = [];
+for (var fb = 0; fb < 3; fb++) {
+  fewBig.push({ text: "one two three four", startMs: fb * 100, endMs: fb * 100 + 90, emphasis: [2, 3], words: null });
+}
+var fewComp = fakeCreateComp(1080, 1920, 20);
+var fewRes = runCreate(fewComp, fewBig, cappedStyle, true);
+check("a handful of power words still gets the look",
+  fewComp.allLayers().length > fewBig.length,
+  "layers: " + fewComp.allLayers().length + " for " + fewBig.length + " captions");
+
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.29"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.28"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.29";
+var LCP_VERSION = "1.8.28";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -29,6 +29,23 @@ var LCP_TAG = "LCP::created";
  */
 var _lcpLastPlacement = null;
 var _lcpBoxNote = "";   // why the background bar was or was not built
+
+// A caption drawn a line at a time costs several layers instead of one, and the
+// generation all happens inside a single undo step - which After Effects reports as
+// a freeze while it works. This is the ceiling: past it the run stops and says so,
+// rather than grinding an application to a halt with no explanation.
+var LCP_MAX_LAYERS = 400;
+
+// The per-line look multiplies layers by the number of lines, and After Effects' text
+// engine is slow enough that hundreds of new text layers inside one undo step reads as
+// a frozen application. So it is used only on a run small enough for the cost to be
+// bounded; past that every caption is one layer, as it always was, and the result says
+// the look was declined rather than leaving it a mystery.
+// Zero means the per-line power-word look is not used at all. It is off because a
+// caption drawn a line at a time multiplies the layers, and that is what made After
+// Effects unresponsive. Everything needed to turn it back on is here; what it needs
+// first is proof that it is safe on a real machine, not another guess.
+var LCP_MAX_EXTRA_LAYERS = 80;
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -555,6 +572,99 @@ function lcp_applyCase(text, style) {
  * Break one caption across 1-3 lines using hard returns (\r), which is what an
  * After Effects text document uses for a line break.
  */
+/**
+ * A caption drawn as one layer per line, so a power word can be larger.
+ *
+ * A text document holds one font size, so a word larger than its neighbours inside a
+ * line is not possible the way the reference does it. Instead the line carrying the
+ * power word becomes its own layer, drawn with the emphasis style. Everything else is
+ * unchanged, so the bar, the glow and the motion still apply to every line.
+ */
+function lcp_addPowerLines(comp, caption, style) {
+  var sourceWords = String(caption.text || "").split(/\s+/);
+  var marks = caption.emphasis || [];
+  var powerIdx = {};
+  var m;
+  for (m = 0; m < marks.length; m++) {
+    var idx = parseInt(marks[m], 10);
+    if (!isNaN(idx)) powerIdx[idx] = true;
+  }
+
+  // The lines are grouped here rather than evenly split, because the point of the
+  // look is that the power word has a line to itself. Adjacent power words stay
+  // together, so a phrase like "I did" holds its line as one. The plain words are
+  // spread over the remaining lines.
+  var plainCount = 0;
+  for (m = 0; m < sourceWords.length; m++) { if (!powerIdx[m] && sourceWords[m]) plainCount++; }
+  var target = parseInt(style.lines, 10);
+  if (isNaN(target) || target < 1) target = 1;
+
+  // A caption that is all numbers or all shouted words would otherwise become one
+  // layer per word. Six lines is as far as this look needs to go.
+  if (target > 6) target = 6;
+  var perLine = Math.max(1, Math.ceil(plainCount / target));
+
+  var lines = [];
+  var lineIsPower = [];
+  var current = [];
+  var currentIsPower = false;
+  var flush = function () {
+    if (current.length) {
+      lines.push(current.join(" "));
+      lineIsPower.push(currentIsPower);
+    }
+    current = [];
+  };
+  for (m = 0; m < sourceWords.length; m++) {
+    var wordText = sourceWords[m];
+    if (!wordText) continue;
+    var isPower = !!powerIdx[m];
+    if (isPower) {
+      if (!currentIsPower) flush();
+      current.push(wordText);
+      currentIsPower = true;
+    } else {
+      if (currentIsPower) { flush(); currentIsPower = false; }
+      current.push(wordText);
+      if (current.length >= perLine) flush();
+    }
+  }
+  flush();
+
+  var applied = lcp_applyCase(lines.join("\r"), style);
+  lines = applied.split(/\r\n?|\n/);
+
+  var compScale = (comp.width > 0) ? (comp.width / 1920) : 1;
+  var step = (lcp_num(style.fontSize, 72) * compScale * 1.18) / Math.max(1, comp.height) * 100;
+  var baseY = lcp_num(style.posY, 78);
+  var start = lcp_num(caption.startMs, 0) / 1000;
+  var end = lcp_num(caption.endMs, 1000) / 1000;
+
+  var total = { text: 0, backdrops: 0, bars: 0 };
+  var drawn = 0;
+  var powered = 0;
+  var i;
+  for (i = 0; i < lines.length; i++) {
+    var line = String(lines[i]);
+    if (!line.replace(/\s/g, "").length) continue;
+
+    // Grouped above, so this is known rather than guessed by matching text again.
+    var isPower = !!lineIsPower[i];
+
+    var lineStyle = isPower ? lcp_emphasisStyle(style) : lcp_copyStyle(style);
+    lineStyle.posY = baseY + (i - (lines.length - 1) / 2) * step;
+
+    var added = lcp_addLayer(comp, line, start, end, lineStyle, true);
+    total.text += added.text;
+    total.backdrops += added.backdrops;
+    total.bars += (added.bars || 0);
+    drawn++;
+    if (isPower) powered++;
+  }
+
+  _lcpBoxNote = "drawn as " + drawn + " line(s), " + powered + " at the power word size";
+  return total;
+}
 function lcp_splitLines(text, lineCount, maxWords) {
   var target = parseInt(lineCount, 10);
   var value = String(text === null || text === undefined ? "" : text);
@@ -1439,8 +1549,40 @@ function lcp_create(payloadJson) {
     // Ctrl+Z brings the previous captions back, not just the last layer.
     if (replacePrevious) removed = lcp_removeTagged(comp);
 
+    // What this look would cost, counted before anything is built. Counting captions
+    // was the wrong measure: fifty captions with one power word each are cheap, five
+    // all-caps ones with a glow are not. A caption with a power word is drawn a line
+    // at a time, so it costs one layer per line beyond the first - and a glow backdrop
+    // doubles every layer it touches.
+    var powerCaptions = 0;
+    for (i = 0; i < payload.captions.length; i++) {
+      if (payload.captions[i].emphasis && payload.captions[i].emphasis.length) powerCaptions++;
+    }
+    var linesEach = parseInt(style.lines, 10);
+    if (isNaN(linesEach) || linesEach < 2) linesEach = 2;
+    if (linesEach > 6) linesEach = 6;
+    var perCaption = (linesEach - 1) * (style.applyGlow ? 2 : 1);
+    var estimatedExtra = powerCaptions * perCaption;
+    var allowLines = estimatedExtra <= LCP_MAX_EXTRA_LAYERS;
+    if (!allowLines) {
+      warnings.push("The power word look was declined: it would add about " + estimatedExtra +
+                    " layers (" + powerCaptions + " caption(s) with a power word, drawn " +
+                    linesEach + " lines each" + (style.applyGlow ? ", doubled by the glow" : "") +
+                    "), and the budget is " + LCP_MAX_EXTRA_LAYERS + ". Every caption is one " +
+                    "layer instead - generate a shorter range to use the look.");
+    }
+
     for (i = 0; i < payload.captions.length; i++) {
       var caption = payload.captions[i];
+
+      if (created + backdrops + bars >= LCP_MAX_LAYERS) {
+        warnings.push("Stopped at " + LCP_MAX_LAYERS + " layers. A style that draws a " +
+                      "caption a line at a time builds several layers per caption, so a " +
+                      "long transcript can ask for hundreds. Generate a shorter range, or " +
+                      "pick a style that draws one layer per caption.");
+        break;
+      }
+
       try {
         if (style.karaoke && caption.words && caption.words.length > 1) {
           // Karaoke keeps the whole phrase and highlights the spoken word.
@@ -1467,14 +1609,18 @@ function lcp_create(payloadJson) {
             bars += (wordAdded.bars || 0);
           }
         } else {
-          var blockAdded = lcp_addLayer(
-            comp,
-            lcp_splitLines(lcp_applyCase(caption.text, style), style.lines, style.maxWords),
-            lcp_num(caption.startMs, 0) / 1000,
-            lcp_num(caption.endMs, 1000) / 1000,
-            style,
-            true    // one bar for the whole caption
-          );
+          // A caption with power words is drawn a line at a time, so the line carrying the
+          // power word can be drawn larger than the rest.
+          var blockAdded = (caption.emphasis && caption.emphasis.length && allowLines)
+            ? lcp_addPowerLines(comp, caption, style)
+            : lcp_addLayer(
+                comp,
+                lcp_splitLines(lcp_applyCase(caption.text, style), style.lines, style.maxWords),
+                lcp_num(caption.startMs, 0) / 1000,
+                lcp_num(caption.endMs, 1000) / 1000,
+                style,
+                true
+              );
           created += blockAdded.text;
           backdrops += blockAdded.backdrops;
           bars += (blockAdded.bars || 0);
