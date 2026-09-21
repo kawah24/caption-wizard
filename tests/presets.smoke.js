@@ -27,7 +27,7 @@ var HOST_KEYS = [
   "applyGlow", "glowColor", "glowAmount",
   "tracking", "transform", "lines", "maxWords", "autoSpaceOutline",
   "align", "posX", "posY", "applyBox", "boxColor", "boxOpacity", "boxPadding",
-  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale", "linePadding",
+  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale", "linePadding", "fillOpacity", "emphasisOpacity",
   "wordByWord", "inDurMs", "outDurMs",
   "karaoke", "karaokeHighlight", "karaokeDim", "karaokePop"
 ];
@@ -283,6 +283,8 @@ check('the power word size can be pushed to 250%', /emphasisScale:[^}]*max: 250/
 check('the card can reach drop shadow and glow', pwPreset.controls.indexOf('applyShadow') >= 0 && pwPreset.controls.indexOf('applyGlow') >= 0);
 check('the card can reach the padding slider', pwPreset.controls.indexOf('linePadding') >= 0);
 check('and every style carries a padding value', typeof P.resolveSettings('karaoke', {}).linePadding === 'number', String(P.resolveSettings('karaoke', {}).linePadding));
+
+check('the card can reach both opacities', pwPreset.controls.indexOf('fillOpacity') >= 0 && pwPreset.controls.indexOf('emphasisOpacity') >= 0);
 
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");

@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.36"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.37"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.36";
+var LCP_VERSION = "1.8.37";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -671,6 +671,11 @@ function lcp_addPowerLines(comp, caption, style) {
     var isPower = !!lineIsPower[i];
 
     var lineStyle = isPower ? lcp_emphasisStyle(style) : lcp_copyStyle(style);
+    // Each line carries the opacity that belongs to it, so the power word can be
+    // quieter or louder than the words around it.
+    lineStyle.fillOpacity = isPower
+      ? (style.emphasisOpacity === undefined ? 100 : style.emphasisOpacity)
+      : (style.fillOpacity === undefined ? 100 : style.fillOpacity);
     lineStyle.posY = cursorY + lineHeights[i] / 2;
     cursorY += lineHeights[i];
 
@@ -1512,7 +1517,10 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, wantBar) {
     _lcpBoxNote = "this kind of caption layer does not take a background bar";
   }
 
-  lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, textY]);
+  // The motion keys opacity 0 to 100, so the layer's own opacity has to cap it - the
+  // same reason the background bar passes its own value.
+  lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, textY],
+                  (style.fillOpacity === undefined ? 100 : lcp_num(style.fillOpacity, 100)) / 100);
   if (glowBackdrop) {
     lcp_applyMotion(glowBackdrop, style, comp, glowBackdrop.inPoint, glowBackdrop.outPoint, [baseX, textY]);
   }

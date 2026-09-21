@@ -1284,6 +1284,39 @@ check("a bigger padding makes a bigger gap between lines",
 // line is tall enough to hold it.
 check("at zero padding the lines still do not collide",
   tight > 0 && tight >= Math.round(150 * (1080 / 1920) * 1.18 / 2), "tightest gap " + tight + "px");
+console.log("");
+console.log("the opacities reach the layers, and the motion cannot overwrite them");
+
+var opComp = fakeCreateComp(1080, 1920, 10);
+var opStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+opStyle.fillOpacity = 40;
+opStyle.emphasisOpacity = 25;
+opStyle.applyGlow = false;
+var opRes = runCreate(opComp, [{
+  text: "one two three four five six", startMs: 0, endMs: 2000,
+  emphasis: [5],
+  words: [{ text: "one" }, { text: "two" }, { text: "three" }, { text: "four" }, { text: "five" }, { text: "six" }]
+}], opStyle, true);
+
+var allTooHigh = [];
+var powerTooHigh = [];
+var plainSeen = 0;
+opComp.allLayers().forEach(function (l) {
+  var vals = l._opacity || [];
+  var isPower = String(l.text).indexOf("six") >= 0;
+  var cap = isPower ? 25.0001 : 40.0001;
+  vals.forEach(function (v) {
+    if (v > cap) { (isPower ? powerTooHigh : allTooHigh).push(String(l.text) + "=" + v); }
+  });
+  if (isPower) {
+    check("the power word layer is capped by its own opacity", vals.length > 0, JSON.stringify(vals.slice(0, 6)));
+  } else if (vals.length) plainSeen++;
+});
+check("no layer ever writes an opacity above the text opacity",
+  allTooHigh.length === 0, allTooHigh.slice(0, 6).join(", "));
+check("and nothing writes above the power word opacity either",
+  powerTooHigh.length === 0, powerTooHigh.slice(0, 6).join(", "));
+check("the plain lines were actually drawn", plainSeen > 0, String(plainSeen));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

@@ -464,7 +464,9 @@
 
     var factor = scale || 1;
 
-    label.style.color = settings.fill || "#ffffff";
+    // The fill carries its own alpha, so the preview shows the same tint the comp will.
+    label.style.color = rgba(settings.fill || "#ffffff",
+      (settings.fillOpacity === undefined ? 100 : settings.fillOpacity) / 100);
 
     // Snap the PostScript name onto a family the panel can actually render, and
     // record whether it resolved, so the status line can be honest about it.
@@ -554,7 +556,8 @@
       if (karaoke) break; // karaoke animates its own colours
       var emphasised = root.LcpPresets.isEmphasisWord(wordNodes[w].textContent, settings, true);
       if (emphasised) {
-        wordNodes[w].style.color = settings.emphasisColor || "#ffd400";
+        wordNodes[w].style.color = rgba(settings.emphasisColor || "#ffd400",
+        (settings.emphasisOpacity === undefined ? 100 : settings.emphasisOpacity) / 100);
         wordNodes[w].style.fontSize = Math.round(
           (settings.fontSize || 72) * factor * ((settings.emphasisScale || 110) / 100)
         ) + "px";

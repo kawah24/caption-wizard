@@ -64,7 +64,9 @@
     // A third way to choose: one word a caption, by hashing the caption's own text.
     // Not a random number generator, because the preview rebuilds the plan on every
     // repaint and a fresh pick each time would make it flicker while the comp sat still.
-    linePadding: { label: "Padding between lines", type: "range", min: 0, max: 60, step: 1, unit: "%" },
+    fillOpacity: { label: "Text opacity", type: "range", min: 0, max: 100, step: 1, unit: "%" },
+  emphasisOpacity: { label: "Power word opacity", type: "range", min: 0, max: 100, step: 1, unit: "%" },
+  linePadding: { label: "Padding between lines", type: "range", min: 0, max: 60, step: 1, unit: "%" },
   emphasisRandom: { label: "Pick the power word at random", type: "toggle" },
 
     emphasisWords: { label: "Power words (comma separated)", type: "text" },    emphasisAuto: { label: "Auto: numbers and SHOUTED words", type: "toggle" },
@@ -115,6 +117,8 @@
     boxPadding: 18,
     emphasisWords: "",
     linePadding: 18,
+    fillOpacity: 100,
+    emphasisOpacity: 100,
     emphasisAuto: true,
     emphasisColor: "#ffd400",
     emphasisScale: 110,
@@ -180,7 +184,9 @@
     boxColor: "Colour of the bar.",
     boxOpacity: "How solid the bar is.",
     boxPadding: "Space between the words and the edge of the bar.",
-    linePadding: "The gap between lines, as a share of the text size. Three lines with a power word need room for it.",
+    fillOpacity: "How solid the text is. Below 100 it reads as a tint of the background.",
+  emphasisOpacity: "How solid the power word is, so it can be quieter or louder than the rest.",
+  linePadding: "The gap between lines, as a share of the text size. Three lines with a power word need room for it.",
   emphasisRandom: "Choose one word in each caption without listing any, so the emphasis moves around rather than repeating the same rule.",
 
     emphasisWords: "Words to hit harder, separated by commas. Leave empty to use the automatic list.",
@@ -211,7 +217,7 @@
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "lines", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY",
-    "inDurMs", "outDurMs", "linePadding"
+    "inDurMs", "outDurMs", "linePadding", "fillOpacity"
   ];
 
   /**
@@ -224,7 +230,7 @@
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
     "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
-    "inDurMs", "outDurMs", "linePadding"
+    "inDurMs", "outDurMs", "linePadding", "fillOpacity"
   ];
 
   var PRESETS = [
@@ -238,7 +244,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding", "fillOpacity"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true,
         strokeColor: "#000000", strokeWidth: 8, transform: "uppercase", posY: 76,
@@ -269,7 +275,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding", "fillOpacity"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff4df0", karaokeDim: "#8ef7ff", karaokePop: true,
         strokeColor: "#1b2bff", strokeWidth: 12, transform: "uppercase", posY: 76,
@@ -475,7 +481,7 @@
                  "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
                    "tracking", "transform", "lines", "maxWords", "splitBySentence",
                  "align", "posX", "posY",
-                 "linePadding", "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
+                 "linePadding", "fillOpacity", "emphasisOpacity", "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
       defaults: {
         // Bold is left off, like every other card: the weight in the reference is
         // the font doing its job, and a preset that forces bold fights the picker.
@@ -487,6 +493,8 @@
         lines: "3",
         emphasisRandom: true, emphasisAuto: false, emphasisWords: "",
     linePadding: 18,
+    fillOpacity: 100,
+    emphasisOpacity: 100,
         // Bigger and heavier, not a second colour - that is the look being copied.
         emphasisColor: "#ffffff", emphasisScale: 148,
         inDurMs: 200, outDurMs: 150
