@@ -232,6 +232,30 @@ console.log("the neon styles ship with a glow");
 });
 
 console.log("");
+console.log("");
+console.log("the Power Word card");
+
+var pwPreset = null;
+for (var pwi = 0; pwi < P.PRESETS.length; pwi++) {
+  if (P.PRESETS[pwi].id === "power-word") pwPreset = P.PRESETS[pwi];
+}
+check("the Power Word card exists", !!pwPreset);
+if (pwPreset) {
+  var pwSettings = P.resolveSettings("power-word", {});
+  check("it renders the emphasis in the comp, which needs word by word on",
+    pwSettings.wordByWord === true,
+    "the host applies emphasis only on its word by word path, so without this the comp ignores it");
+  check("the emphasis is size, not a second colour",
+    String(pwSettings.emphasisColor).toLowerCase() === "#ffffff" && pwSettings.emphasisScale > 130,
+    pwSettings.emphasisColor + " at " + pwSettings.emphasisScale + "%");
+  check("its controls expose the emphasis keys",
+    pwPreset.controls.indexOf("emphasisScale") >= 0 &&
+    pwPreset.controls.indexOf("emphasisAuto") >= 0 &&
+    pwPreset.controls.indexOf("emphasisWords") >= 0);
+  check("and it keeps the house rule on bold", pwSettings.bold === false);
+  check("it has a blurb and preview text, like every card",
+    !!pwPreset.blurb && !!pwPreset.previewLine);
+}
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

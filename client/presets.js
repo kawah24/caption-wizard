@@ -453,6 +453,32 @@
         fontSize: 150, filled: false, applyStroke: true, strokeColor: "#ffffff",
         strokeWidth: 6, transform: "uppercase", tracking: 20
       }
+    },
+    {
+      id: "power-word",
+      name: "Power Word",
+      blurb: "Quiet lines, with the word that matters drawn much larger.",
+      motion: "popIn",
+      previewLine: "I did",
+      // The emphasis keys are not in PLAIN_CONTROLS: this card exists for them.
+      controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
+                 "strokeWidth", "tracking", "transform", "maxWords", "splitBySentence",
+                 "align", "posX", "posY", "wordByWord",
+                 "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
+      defaults: {
+        // Bold is left off, like every other card: the weight in the reference is
+        // the font doing its job, and a preset that forces bold fights the picker.
+        fontSize: 150, fill: "#ffffff",
+        applyStroke: false, applyShadow: false, transform: "none", posY: 50,
+        // Word by word is on because that is how the host draws emphasis: each
+        // caption is one word, and the power word is built from the emphasis style.
+        // Without it the comp would ignore the emphasis the preview is showing.
+        wordByWord: true,
+        emphasisWords: "", emphasisAuto: true,
+        // Bigger and heavier, not a second colour - that is the look being copied.
+        emphasisColor: "#ffffff", emphasisScale: 148,
+        inDurMs: 200, outDurMs: 150
+      }
     }
   ];
 
