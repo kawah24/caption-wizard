@@ -92,6 +92,27 @@ eq("empty input is safe", P.familyForPostScript(""), "Arial");
 eq("null input is safe", P.familyForPostScript(null), "Arial");
 
 console.log("");
+check("outline width 0 draws nothing", P.strokePx(0, P.sizeFactor(236)) === 0);
+check("the outline grows with the slider",
+  P.strokePx(2, P.sizeFactor(236)) < P.strokePx(6, P.sizeFactor(236)) &&
+  P.strokePx(6, P.sizeFactor(236)) < P.strokePx(12, P.sizeFactor(236)) &&
+  P.strokePx(12, P.sizeFactor(236)) < P.strokePx(40, P.sizeFactor(236)),
+  [2, 6, 12, 40].map(function (w) { return P.strokePx(w, P.sizeFactor(236)).toFixed(3); }).join(", "));
+check("every width in the slider's useful range gives a different outline",
+  (function () {
+    var seen = {};
+    for (var w = 0; w <= 40; w++) {
+      var key = P.strokePx(w, P.sizeFactor(236)).toFixed(2);
+      if (seen[key]) return false;
+      seen[key] = true;
+    }
+    return true;
+  })(),
+  "the old rule pinned every width under 16 to 1px");
+check("it uses the host's rule: width times factor",
+  Math.abs(P.strokePx(12, P.sizeFactor(236)) - 12 * P.sizeFactor(236)) < 1e-9);
+check("a missing width uses the shipped default",
+  P.strokePx(undefined, P.sizeFactor(236)) === P.strokePx(6, P.sizeFactor(236)));
 console.log("glow is shared, and visible at preview sizes");
 
 check("no glow setting means no shadow",

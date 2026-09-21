@@ -274,6 +274,19 @@
   }
 
   /**
+   * Outline width for the preview, in preview pixels.
+   *
+   * The same rule the host applies to the comp: the style's width scaled by the
+   * comp-to-preview factor. This used to be scaled by an extra 0.3 and floored at
+   * 1px, which pinned every width below about 16px to the same 1px line - so the
+   * Outline slider did nothing until the very top of its range.
+   */
+  function strokePx(strokeWidth, factor) {
+    var width = (strokeWidth === undefined) ? 6 : strokeWidth;
+    return Math.max(0, width * factor);
+  }
+
+  /**
    * The glow as a text-shadow value, or "" when the style has none.
    *
    * Shared by the stage and the style cards so a neon style looks like one
@@ -454,8 +467,8 @@
     }
 
     if (settings.applyStroke || settings.filled === false) {
-      label.style.webkitTextStroke = Math.max(1, Math.round((settings.strokeWidth || 6) * 0.3 * factor)) +
-        "px " + (settings.strokeColor || "#000000");
+      label.style.webkitTextStroke = strokePx(settings.strokeWidth, factor).toFixed(2) + "px " +
+        (settings.strokeColor || "#000000");
     } else {
       label.style.webkitTextStroke = "0";
     }
@@ -791,6 +804,7 @@
     withKaraokeMarker: withKaraokeMarker,
     glowRadii: glowRadii,
     glowShadow: glowShadow,
+    strokePx: strokePx,
     applyLineBreaks: applyLineBreaks,
     normalizeName: normalizeName,
     camelSplit: camelSplit,
