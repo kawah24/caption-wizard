@@ -239,6 +239,15 @@ var tipSentences = (tipsHtml.match(/<li>[^<]*<\/li>/g) || []).map(function (s) {
   return s.replace(/<\/?li>/g, "").replace(/\.$/, "");
 });
 var echoes = tipSentences.filter(function (t) { return sampleBlock.indexOf(t) >= 0; });
+var tipOrder = (tipsHtml.match(/<li>([^<]*)<\/li>/g) || []).map(function (s) { return s.replace(/<\/?li>/g, ""); });
+check("the how-to list keeps the order that was asked for",
+  tipOrder.length === 5 &&
+  tipOrder[0] === "One caption per line." &&
+  tipOrder[1] === "Load an SRT to keep your own timecodes." &&
+  tipOrder[2] === "Use the Auto section to create captions from your video file." &&
+  tipOrder[3] === "Pick a style, then generate." &&
+  tipOrder[4] === "Press Sample to try it with a built-in example.",
+  "got: " + tipOrder.join(" | "));
 check("the sample transcript does not repeat the tips above it",
   echoes.length === 0, "repeated: " + echoes.join(" | "));
 check("the sample is an actual demo transcript",
