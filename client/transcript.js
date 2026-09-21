@@ -293,7 +293,8 @@
       ? opts.wordsPerCaption
       : 0;
 
-    cues = wrapCuesWithWords(cues, maxWords, wordByWord);
+    if (opts.splitBySentence) cues = splitBySentences(cues);
+      cues = wrapCuesWithWords(cues, maxWords, wordByWord);
 
     var captions = [];
     var i;
@@ -329,6 +330,52 @@
     return { captions: captions, mode: "asr", durationMs: durationMs };
   }
 
+  /** True when a word ends a sentence, as a caption would break it. */
+  function endsSentence(word) {
+    return /[.!?]["'\u201d\u2019)\]]*$/.test(String(word || ""));
+  }
+
+  /** Build one cue from a run of word objects, keeping their real timings. */
+  function cueFromWords(cue, run) {
+    return {
+      text: run.map(function (word) { return String(word.text || ""); }).join(" "),
+      startMs: Math.round(run[0].startMs),
+      endMs: Math.round(run[run.length - 1].endMs),
+      words: run.slice(0)
+    };
+  }
+
+  /**
+   * Break cues at sentence ends.
+   *
+   * The panel can be asked for one caption per sentence. Ends are found in the
+   * words themselves, so when real word timings exist each sentence keeps its own
+   * window; a sentence still longer than Max words is wrapped by the usual word
+   * rule afterwards.
+   */
+  function splitBySentences(cues) {
+    var out = [];
+    for (var i = 0; i < cues.length; i++) {
+      var cue = cues[i];
+      var words = (cue.words && cue.words.length) ? cue.words : splitWords(cue.text);
+      var span = (cue.endMs - cue.startMs) / (words.length || 1);
+      var run = [];
+      for (var w = 0; w < words.length; w++) {
+        var word = words[w];
+        var text = String(word.text !== undefined ? word.text : word);
+        run.push({
+          text: text,
+          startMs: (word.startMs !== undefined) ? Math.round(word.startMs) : Math.round(cue.startMs + span * w),
+          endMs: (word.endMs !== undefined) ? Math.round(word.endMs) : Math.round(cue.startMs + span * (w + 1))
+        });
+        if (endsSentence(text) || w === words.length - 1) {
+          out.push(cueFromWords(cue, run));
+          run = [];
+        }
+      }
+    }
+    return out;
+  }
   /** Wrap an over-long cue into several evenly-timed cues. */
   function wrapLongCues(cues, maxWords) {
     var wrapped = [];
@@ -382,6 +429,7 @@
     var maxWords = (isFiniteNumber(opts.wordsPerCaption) && opts.wordsPerCaption > 0)
       ? opts.wordsPerCaption
       : 6;
+    if (opts.splitBySentence) rawCues = splitBySentences(rawCues);
     var wrapped = wrapLongCues(rawCues, maxWords);
 
     var offsetMs = isFiniteNumber(opts.offsetMs) ? opts.offsetMs : 0;

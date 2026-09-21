@@ -227,6 +227,30 @@ var empty = T.planCaptions("   \n\n  ", {});
 eq("no captions from whitespace", empty.captions.length, 0);
 
 console.log("");
+console.log("split captions by sentence");
+
+var sentences = T.planCaptions("One thing. Two things! Three things?", { wordsPerCaption: 10, splitBySentence: true });
+eq("one caption per sentence", sentences.captions.length, 3);
+eq("the first sentence is intact", sentences.captions[0].text, "One thing.");
+eq("the last sentence too", sentences.captions[2].text, "Three things?");
+
+var sentenceOff = T.planCaptions("One thing. Two things! Three things?", { wordsPerCaption: 10, splitBySentence: false });
+eq("with the setting off nothing changes", sentenceOff.captions.length, 1);
+
+var longSentence = T.planCaptions("Dolly writes songs. She sings every single night.", { wordsPerCaption: 3, splitBySentence: true });
+eq("a sentence inside the limit is not split", longSentence.captions[0].text, "Dolly writes songs.");
+eq("a sentence over the limit is still wrapped", longSentence.captions.length, 3);
+eq("the wrapped tail is right", longSentence.captions[2].text, "single night.");
+
+var kept = T.planCaptions("First words here. Second words here.", { wordsPerCaption: 10, splitBySentence: true });
+eq("no word is lost",
+  kept.captions.map(function (c) { return c.text; }).join(" "), "First words here. Second words here.");
+check("every caption still has a real window",
+  kept.captions.every(function (c) { return c.endMs > c.startMs; }));
+check("captions stay in order",
+  kept.captions[1].startMs >= kept.captions[0].endMs);
+
+console.log("");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

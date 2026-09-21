@@ -1,6 +1,6 @@
 # Caption Wizard
 
-A local-only caption panel for **After Effects 2022+** (CEP 11), version 1.3.5.
+A local-only caption panel for **After Effects 2022+** (CEP 11), version 1.4.0.
 
 No sign-in. No account. No licence key. No subscription tier. No telemetry. The
 extension itself makes no network requests at all — it parses your transcript in

@@ -119,6 +119,7 @@
       plan = root.LcpTranscript.planFromCues(state.asr.cues, {
         offsetMs: timing.offsetMs,
         wordsPerCaption: style.maxWords,
+      splitBySentence: style.splitBySentence === true,
         wordByWord: wantsWordTimings()
       });
     } else {
@@ -127,6 +128,7 @@
         gapMs: timing.gapMs,
         offsetMs: timing.offsetMs,
         wordsPerCaption: style.maxWords,
+      splitBySentence: style.splitBySentence === true,
         wordByWord: wantsWordTimings()
       });
     }
