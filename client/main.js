@@ -903,10 +903,17 @@
       // Report what the comp actually gained. Glow adds a backdrop layer behind
       // every text layer, so the plain total would overstate the caption count.
       var message = "Created " + result.created + " text layer(s)";
-      if (result.backdrops) {
-        message += " (" + result.text + " caption" + (result.text === 1 ? "" : "s") +
-                   " + " + result.backdrops + " glow backdrop" +
-                   (result.backdrops === 1 ? "" : "s") + ")";
+      if (result.backdrops || result.bars) {
+        message += " (" + result.text + " caption" + (result.text === 1 ? "" : "s");
+        if (result.backdrops) {
+          message += " + " + result.backdrops + " glow backdrop" +
+                     (result.backdrops === 1 ? "" : "s");
+        }
+        if (result.bars) {
+          message += " + " + result.bars + " background bar" +
+                     (result.bars === 1 ? "" : "s");
+        }
+        message += ")";
       }
       message += ".";
       if (result.removed) {

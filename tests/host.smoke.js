@@ -347,7 +347,7 @@ function fakeCreateComp(width, height, duration) {
         copy.comment = layer.comment;
         return copy;
       },
-      moveAfter: function () {},
+      moveAfter: function (other) { layer._movedAfter = other ? other.name : null; },
       remove: function () {
         var at = layers.indexOf(layer);
         if (at >= 0) layers.splice(at, 1);
@@ -372,7 +372,16 @@ function fakeCreateComp(width, height, duration) {
   comp.glowProps = function () { return comp._glowProps; };
   Object.defineProperty(comp, "numLayers", { get: function () { return layers.length; } });
   comp.layer = function (index) { return layers[index - 1]; };
-  comp.layers = { addText: function (text) { return add(text); } };
+  comp.layers = {
+    addText: function (text) { return add(text); },
+    // A background bar is a solid. Without this stub the box path threw, was
+    // swallowed, and every test stayed green while Shorts Bar drew nothing.
+    addSolid: function (color, name, w, h, aspect, dur) {
+      var layer = add(name);
+      layer._solid = { color: color, width: w, height: h, aspect: aspect, duration: dur };
+      return layer;
+    }
+  };
   comp.addUntagged = function (text) { return add(text); };
   comp.allLayers = function () { return layers.slice(0); };
   comp.taggedLayers = function () {
@@ -646,8 +655,11 @@ lcpPresets.PRESETS.forEach(function (preset) {
       return;
     }
     var settled = layer._positions[layer._positions.length - 1];
-    if (Math.abs(settled[1] - wantY) > 0.001) {
-      misplaced.push(preset.id + " y=" + Math.round(settled[1]) + " wanted " + Math.round(wantY));
+    // A bar is centred on the text box itself, which the fake reports 10px below
+    // the anchor, so a bar sits 10px above where a text layer settles.
+    var want = layer._solid ? wantY - 10 : wantY;
+    if (Math.abs(settled[1] - want) > 0.001) {
+      misplaced.push(preset.id + " y=" + Math.round(settled[1]) + " wanted " + Math.round(want));
     }
   });
 });
@@ -824,6 +836,43 @@ check("the blur radius is the same fraction of the text on both sides",
   blurKey ? blurComp.glowProps()[blurKey] + "px vs " + (compFontPx * 0.45).toFixed(1) + "px" : "no blur recorded");
 
 console.log("");
+console.log("");
+console.log("the background bar is really built");
+
+var boxProblems = [];
+var boxSamples = [];
+lcpPresets.PRESETS.forEach(function (preset) {
+  var comp = fakeCreateComp(1080, 1920, 10);
+  var settings = lcpPresets.resolveSettings(preset.id, {}, lcpPresets.TIMING_DEFAULTS);
+  var res = runCreate(comp, [phrase("boxed caption", 0, 2000)], settings, true);
+  var bars = comp.allLayers().filter(function (l) { return l.name === "bar"; });
+
+  if (settings.applyBox) {
+    if (bars.length !== 1) boxProblems.push(preset.id + " built " + bars.length + " bar(s)");
+  } else if (bars.length) {
+    boxProblems.push(preset.id + " built a bar it never asked for");
+  }
+  if (bars.length) boxSamples.push({ id: preset.id, bar: bars[0], result: res });
+});
+check("every boxed style builds one bar, and no other style builds any",
+  boxProblems.length === 0, boxProblems.join(" | "));
+check("at least one style is boxed, so this is not vacuous", boxSamples.length > 0);
+
+if (boxSamples.length) {
+  var sample = boxSamples[0];
+  check("the bar is counted in the result", sample.result.bars === 1, JSON.stringify(sample.result));
+  check("the bar is a solid, not a text layer",
+    !!(sample.bar._solid && sample.bar._solid.color && sample.bar._solid.color.length === 3),
+    JSON.stringify(sample.bar._solid));
+  check("the bar is measured from the text, with the padding added",
+    sample.bar._solid.width > sample.bar._solid.height && sample.bar._solid.height > 0,
+    JSON.stringify(sample.bar._solid));
+  check("the bar is put behind the caption it belongs to",
+    !!sample.bar._movedAfter, "moveAfter was never called on the bar");
+  check("the bar spans the caption's own timing",
+    sample.bar.inPoint === 0 && sample.bar.outPoint > sample.bar.inPoint,
+    "in=" + sample.bar.inPoint + " out=" + sample.bar.outPoint);
+}
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

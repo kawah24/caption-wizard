@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.15"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.16"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.15";
+var LCP_VERSION = "1.8.16";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -433,7 +433,7 @@ function lcp_addKaraokePhrase(comp, caption, style) {
     cursor += widths[i] + spaceWidth;
   }
 
-  return { text: count, backdrops: backdrops };
+  return { text: count, backdrops: backdrops, bars: 0 };
 }
 
 /** Colour highlight, optional pop, and the phrase's own fade for one word. */
@@ -1221,7 +1221,13 @@ function lcp_textOffset(layer, atTime) {
  * Returns the layer count it took - the text layer, plus a glow backdrop when
  * the style asks for one - so callers can report what the comp really gained.
  */
-function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
+/**
+ * `wantBar` asks for the background bar on this layer. It was passed as
+ * !wordByWord, which happened to give the right answer for a whole caption but
+ * meant nothing for a style that is both word by word and boxed - those silently
+ * got no bar. Say what it means.
+ */
+function lcp_addLayer(comp, text, startSeconds, endSeconds, style, wantBar) {
   var layer = comp.layers.addText(String(text));
 
   try { layer.comment = LCP_TAG; } catch (err) { /* comment is only needed for clear */ }
@@ -1268,14 +1274,15 @@ function lcp_addLayer(comp, text, startSeconds, endSeconds, style, allowBox) {
 
   // The bar measures the text, so it has to be built while the layer already
   // holds its final text.
-  if (allowBox && style.applyBox) lcp_addBox(comp, layer, style);
+  var bar = null;
+  if (wantBar && style.applyBox) bar = lcp_addBox(comp, layer, style);
 
   lcp_applyMotion(layer, style, comp, inPoint, outPoint, [baseX, textY]);
   if (glowBackdrop) {
     lcp_applyMotion(glowBackdrop, style, comp, glowBackdrop.inPoint, glowBackdrop.outPoint, [baseX, textY]);
   }
 
-  return { text: 1, backdrops: glowBackdrop ? 1 : 0 };
+  return { text: 1, backdrops: glowBackdrop ? 1 : 0, bars: bar ? 1 : 0 };
 }
 
 /**
@@ -1310,6 +1317,7 @@ function lcp_create(payloadJson) {
 
   var created = 0;
   var backdrops = 0;
+  var bars = 0;
   var removed = 0;
   var errors = [];
   var warnings = [];
@@ -1333,6 +1341,7 @@ function lcp_create(payloadJson) {
           var karaokeAdded = lcp_addKaraokePhrase(comp, caption, style);
           created += karaokeAdded.text;
           backdrops += karaokeAdded.backdrops;
+          bars += (karaokeAdded.bars || 0);
         } else if (wordByWord && caption.words && caption.words.length) {
           for (j = 0; j < caption.words.length; j++) {
             var word = caption.words[j];
@@ -1345,10 +1354,11 @@ function lcp_create(payloadJson) {
               lcp_num(word.startMs, caption.startMs) / 1000,
               lcp_num(word.endMs, caption.endMs) / 1000,
               wordStyle,
-              false
+              false   // a bar around a single word would box the word, not the line
             );
             created += wordAdded.text;
             backdrops += wordAdded.backdrops;
+            bars += (wordAdded.bars || 0);
           }
         } else {
           var blockAdded = lcp_addLayer(
@@ -1357,10 +1367,11 @@ function lcp_create(payloadJson) {
             lcp_num(caption.startMs, 0) / 1000,
             lcp_num(caption.endMs, 1000) / 1000,
             style,
-            !wordByWord
+            true    // one bar for the whole caption
           );
           created += blockAdded.text;
           backdrops += blockAdded.backdrops;
+          bars += (blockAdded.bars || 0);
         }
       } catch (captionError) {
         errors.push("Caption " + (i + 1) + ": " + captionError.toString());
@@ -1410,8 +1421,8 @@ function lcp_create(payloadJson) {
   // "created" stays the total layer count; text and backdrops break it down, so
   // the panel can say where the layers went instead of implying they are all
   // captions.
-  return '{"ok":true,"created":' + (created + backdrops) +
-         ',"text":' + created + ',"backdrops":' + backdrops +
+  return '{"ok":true,"created":' + (created + backdrops + bars) +
+         ',"text":' + created + ',"backdrops":' + backdrops + ',"bars":' + bars +
          ',"removed":' + removed + placement +
          ',"errors":' + lcp_jsonStringArray(errors) +
          ',"warnings":' + lcp_jsonStringArray(warnings) + "}";
