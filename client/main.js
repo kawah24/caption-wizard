@@ -50,6 +50,23 @@
   // first cue is pulled onto the measured onset. Leaving this to the markup order
   // sent tiny, because tiny is listed first.
   var DEFAULT_MODEL = "small";
+  // One line per model, shown under the dropdown. Written from measurements on a
+  // real clip rather than an assumption: base runs sentences together where small
+  // breaks them, medium is about three times slower than small, and large-v3 is
+  // about four times slower and 2.9 GB on disk. Every model in MODELS needs a note
+  // here - a check fails if one is missing.
+  var MODEL_NOTES = {
+    "tiny": "Fastest and least accurate - fine for a rough pass, but it mishears names.",
+    "base": "A little better than tiny, but still runs sentences together with commas.",
+    "small": "The default. Accurate enough for captions, and about 17 seconds for a minute of audio.",
+    "medium": "Better on unusual words, about three times slower than small.",
+    "large-v3": "The most accurate wording, about four times slower, and 2.9 GB on disk."
+  };
+
+  function updateModelHint() {
+    if (!el.modelHint || !el.modelSelect) return;
+    el.modelHint.textContent = MODEL_NOTES[el.modelSelect.value] || "";
+  }
 
   /* ------------------------------------------------------------------ */
   /* host bridge helpers                                                */
@@ -1224,12 +1241,14 @@
     try {
       var savedModel = root.localStorage.getItem("lcp.model");
       el.modelSelect.value = MODELS.indexOf(savedModel) >= 0 ? savedModel : DEFAULT_MODEL;
+      updateModelHint();
       var savedLanguage = root.localStorage.getItem("lcp.language");
       if (savedLanguage) el.languageSelect.value = savedLanguage;
     } catch (err) { /* ignore */ }
 
     el.modelSelect.onchange = function () {
       try { root.localStorage.setItem("lcp.model", el.modelSelect.value); } catch (e) { /* ignore */ }
+      updateModelHint();
     };
     el.languageSelect.onchange = function () {
       try { root.localStorage.setItem("lcp.language", el.languageSelect.value); } catch (e) { /* ignore */ }
@@ -1336,6 +1355,7 @@
     el.modelSelect = byId("modelSelect");
     el.languageSelect = byId("languageSelect");
     el.allowDownload = byId("allowDownload");
+  el.modelHint = byId("modelHint");
     el.audioPath = byId("audioPath");
     el.chooseAudioBtn = byId("chooseAudioBtn");
     el.useCompMediaBtn = byId("useCompMediaBtn");

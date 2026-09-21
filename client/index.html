@@ -100,9 +100,11 @@
           <span class="control-label">Python</span>
           <span class="control-value" id="pythonState">checking...</span>
         </div>
-        <input type="text" id="pythonPath" placeholder="auto-detected" />
+        <input type="text" id="pythonPath" placeholder="auto-detected"
+               title="Your own Python 3 install. Faster-whisper and ffmpeg must be available to it; nothing is bundled." />
         <div class="row">
-          <button id="recheckPythonBtn" class="btn" type="button">Re-check</button>
+          <button id="recheckPythonBtn" class="btn" type="button"
+                title="Look for Python again and list which models are already cached on this machine.">Re-check</button>
         </div>
       </div>
 
@@ -110,19 +112,27 @@
         <div class="control-head">
           <span class="control-label">Model</span>
         </div>
-        <select id="modelSelect"></select>
+        <select id="modelSelect"
+                title="Which Whisper model transcribes the audio. Bigger is more accurate and slower. A one-time download is needed only for a model marked (needs download)."></select>
+        <div class="control-hint" id="modelHint"></div>
       </div>
 
       <div class="control">
         <div class="control-head">
           <span class="control-label">Language</span>
         </div>
-        <select id="languageSelect"></select>
+        <select id="languageSelect"
+                title="The language spoken in the file. Auto detects it, which costs a few seconds and can misread a short clip."></select>
       </div>
 
       <div class="control control-toggle">
-        <span class="control-label">Allow a one-time model download</span>
-        <input type="checkbox" id="allowDownload" />
+        <span class="control-label" title="Only needed for a model marked (needs download). This is the single time the tool is allowed to reach the network.">Allow a one-time model download</span>
+        <input type="checkbox" id="allowDownload"
+               title="Only needed for a model marked (needs download). This is the single time the tool is allowed to reach the network." />
+      </div>
+      <div class="control-hint">
+        Leave this off while the model says (cached) - the run stays fully offline. Turn it on
+        only when you pick a model that says (needs download); it is fetched once and then kept.
       </div>
 
       <div class="control">
@@ -130,7 +140,8 @@
           <span class="control-label">Audio or video file</span>
           <span class="control-value" id="mediaState"></span>
         </div>
-        <input type="text" id="audioPath" placeholder="the active comp's video is used automatically" />
+        <input type="text" id="audioPath" placeholder="leave empty to use the active comp's video"
+               title="Leave empty to transcribe the active comp's video, or type a path to any audio or video file." />
         <div class="row">
           <button id="useCompMediaBtn" class="btn primary" type="button">Use active comp video</button>
         </div>
@@ -141,7 +152,8 @@
       </div>
 
       <div class="row">
-        <button id="transcribeBtn" class="btn primary" type="button">Transcribe</button>
+        <button id="transcribeBtn" class="btn primary" type="button"
+              title="Run the transcription on this machine. Nothing is uploaded.">Transcribe</button>
         <button id="cancelTranscribeBtn" class="btn danger" type="button" disabled>Cancel</button>
       </div>
 

@@ -179,6 +179,27 @@ check("the model default is small, not whatever the markup lists first",
   /var DEFAULT_MODEL = "small";/.test(js) &&
   /MODELS\.indexOf\(savedModel\) >= 0 \? savedModel : DEFAULT_MODEL/.test(js),
   "the select kept the first option, which is tiny");
+console.log("");
+console.log("the transcribe tab explains itself");
+
+check("the model dropdown has a tooltip and a hint line",
+  /id="modelSelect"[\s\S]{0,300}?title=/.test(html) && /id="modelHint"/.test(html));
+check("the download checkbox says when it is needed",
+  /id="allowDownload"[\s\S]{0,200}?title=/.test(html) && /say \(cached\)|says \(cached\)/.test(html));
+check("the language and audio controls have tooltips",
+  /id="languageSelect"[\s\S]{0,200}?title=/.test(html) && /id="audioPath"[\s\S]{0,200}?title=/.test(html));
+
+var modelsList = (js.match(/var MODELS = \[([^\]]+)\]/) || [])[1] || "";
+var notesBlock = (js.match(/var MODEL_NOTES = \{([\s\S]*?)\n  \};/) || [])[1] || "";
+var missing = [];
+modelsList.split(",").forEach(function (raw) {
+  var name = raw.replace(/["'\s]/g, "");
+  if (name && notesBlock.indexOf('"' + name + '"') < 0) missing.push(name);
+});
+check("every model in the list has a note, so a new one cannot ship silent",
+  missing.length === 0, "no note for: " + missing.join(", "));
+check("the hint is updated when the model changes",
+  /updateModelHint\(\)[\s\S]{0,120}?onchange/.test(js.replace(/\n/g, " ")) || (js.match(/updateModelHint\(\);/g) || []).length >= 3);
 check("the status reports the pull so it is not a silent change",
   /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
   "a correction the user cannot see is indistinguishable from no correction");
