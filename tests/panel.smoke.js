@@ -218,6 +218,18 @@ check("the reset button is in the markup", /id="resetTimingBtn"/.test(html));
 check("the reset clears the panel's own timing values",
   /function resetTiming\(\)/.test(js) && /state\.timing = \{\};/.test(js));
 check("the reset button is wired", /resetTimingBtn\.onclick = resetTiming/.test(js));
+console.log("");
+console.log("the text section tells you how to use it");
+
+var tipsBlock = (html.match(/<ul class="tips">([\s\S]*?)<\/ul>/) || [])[1] || "";
+check("the text section has a how-to list", tipsBlock.length > 0);
+check("it names all four routes in", /One caption per line/.test(tipsBlock) &&
+  /Load an SRT/.test(tipsBlock) && /Pick a style, then generate/.test(tipsBlock) &&
+  /Auto section/.test(tipsBlock));
+check("the list sits above the transcript box, not below it",
+  html.indexOf('class="tips"') < html.indexOf('id="transcriptInput"'));
+check("the tips are styled so they read as help, not content",
+  /\.tips \{/.test(fs.readFileSync(path.join(__dirname, "..", "client", "style.css"), "utf8")));
 check("the status reports the pull so it is not a silent change",
   /First caption pulled back from/.test(js) && /var wasAt = /.test(js),
   "a correction the user cannot see is indistinguishable from no correction");

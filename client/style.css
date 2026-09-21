@@ -517,6 +517,19 @@ textarea:focus { outline: 1px solid var(--accent-soft); }
   line-height: 1.5;
 }
 
+/* A short how-to list, e.g. above the transcript box. */
+.tips {
+  margin: 6px 0 8px;
+  padding-left: 15px;
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.tips li {
+  margin: 0 0 1px 0;
+}
+
 /* ---------- live preview stage ---------- */
 
 /* Width and height are set in JS from the composition's own aspect ratio, so a
