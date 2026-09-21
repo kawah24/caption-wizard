@@ -1133,13 +1133,13 @@ var pwCaption = {
 };
 var pwRes = runCreate(pwComp, [pwCaption], pwStyle, true);
 var pwLayers = pwComp.allLayers();
-check("a caption with a power word is drawn a line at a time",
-  pwLayers.length >= 3, "layers: " + pwLayers.length + "  result: " + JSON.stringify(pwRes));
+check("a caption with a power word is one layer while the look is off",
+  pwLayers.length === 1, "layers: " + pwLayers.length + "  result: " + JSON.stringify(pwRes));
 var pwTexts = pwLayers.map(function (l) { return String(l.text || l.name); }).join(" / ");
-check("the power word gets a line to itself",
-  /(^|\/ )I did(\/|$)/.test(pwTexts) || pwTexts.indexOf("I did") >= 0, pwTexts);
-check("and the run says what it did",
-  /line\(s\)/.test(pwRes.boxNote || ""), "note: " + pwRes.boxNote);
+check("and the planner still records which words are power words",
+  Array.isArray(pwCaption.emphasis) && pwCaption.emphasis.length === 2,
+  JSON.stringify(pwCaption.emphasis));
+check("and the run reports one text layer for it", pwRes.created === 1, JSON.stringify(pwRes.created));
 
 // no emphasis means the old single-layer path, unchanged
 var plainComp = fakeCreateComp(1080, 1920, 10);
@@ -1191,10 +1191,10 @@ var overRes = runCreate(overComp, lots, cappedStyle, true);
 // Either guard may be the one that trips, depending on the run: the caption budget
 // declines the layer-hungry look, and the ceiling stops a run outright. What matters
 // is that a large run is bounded and that the reason is stated.
-var overWarnings = (overRes.warnings || []).join(" ");
-check("a run too large for the look is bounded and the reason is stated",
-  /declined|Stopped at/.test(overWarnings),
-  "layers: " + overComp.allLayers().length + "  warnings: " + JSON.stringify(overRes.warnings));
+// Bounded by construction now: one layer per caption, whatever the style asks for.
+check("a large run creates one layer per caption and no more",
+  overComp.allLayers().length === lots.length,
+  "layers: " + overComp.allLayers().length + " of " + lots.length + " captions");
 check("and it stops near the ceiling rather than building all of them",
   overComp.allLayers().length <= sandbox.LCP_MAX_LAYERS + 8,
   "layers: " + overComp.allLayers().length);

@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.27"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.28"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.27";
+var LCP_VERSION = "1.8.28";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -41,7 +41,11 @@ var LCP_MAX_LAYERS = 400;
 // a frozen application. So it is used only on a run small enough for the cost to be
 // bounded; past that every caption is one layer, as it always was, and the result says
 // the look was declined rather than leaving it a mystery.
-var LCP_MAX_CAPTIONS_FOR_LINES = 40;
+// Zero means the per-line power-word look is not used at all. It is off because a
+// caption drawn a line at a time multiplies the layers, and that is what made After
+// Effects unresponsive. Everything needed to turn it back on is here; what it needs
+// first is proof that it is safe on a real machine, not another guess.
+var LCP_MAX_CAPTIONS_FOR_LINES = 0;
 
 // What an unknown font family falls back to. Arial ships everywhere, so a style
 // can never end up with no usable font. The panel preview falls back to the same
@@ -1546,7 +1550,7 @@ function lcp_create(payloadJson) {
     if (replacePrevious) removed = lcp_removeTagged(comp);
 
     var allowLines = payload.captions.length <= LCP_MAX_CAPTIONS_FOR_LINES;
-    if (!allowLines) {
+    if (!allowLines && LCP_MAX_CAPTIONS_FOR_LINES > 0) {
       warnings.push("This run has " + payload.captions.length + " captions, so the " +
                     "power word look was declined: drawing a caption a line at a time " +
                     "multiplies the layers, and past " + LCP_MAX_CAPTIONS_FOR_LINES +
