@@ -851,6 +851,7 @@
       anchor.style.background = rgba(settings.boxColor || "#000000",
         (settings.boxOpacity === undefined ? 70 : settings.boxOpacity) / 100);
       anchor.style.padding = pad + "px";
+      anchor.style.lineHeight = String(1 + (settings.linePadding === undefined ? 18 : settings.linePadding) / 100);
       anchor.style.borderRadius = "3px";
     } else {
       anchor.style.background = "";

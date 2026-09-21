@@ -27,7 +27,7 @@ var HOST_KEYS = [
   "applyGlow", "glowColor", "glowAmount",
   "tracking", "transform", "lines", "maxWords", "autoSpaceOutline",
   "align", "posX", "posY", "applyBox", "boxColor", "boxOpacity", "boxPadding",
-  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
+  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale", "linePadding",
   "wordByWord", "inDurMs", "outDurMs",
   "karaoke", "karaokeHighlight", "karaokeDim", "karaokePop"
 ];
@@ -279,6 +279,10 @@ check('the same caption always picks the same word, so the preview cannot flicke
 check('the card lets the line count be changed, since that is its whole look', pwPreset.controls.indexOf('lines') >= 0);
 
 check('the power word size can be pushed to 250%', /emphasisScale:[^}]*max: 250/.test(fs.readFileSync(path.join(__dirname, '..', 'client', 'presets.js'), 'utf8')));
+
+check('the card can reach drop shadow and glow', pwPreset.controls.indexOf('applyShadow') >= 0 && pwPreset.controls.indexOf('applyGlow') >= 0);
+check('the card can reach the padding slider', pwPreset.controls.indexOf('linePadding') >= 0);
+check('and every style carries a padding value', typeof P.resolveSettings('karaoke', {}).linePadding === 'number', String(P.resolveSettings('karaoke', {}).linePadding));
 
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");

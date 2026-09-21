@@ -64,7 +64,8 @@
     // A third way to choose: one word a caption, by hashing the caption's own text.
     // Not a random number generator, because the preview rebuilds the plan on every
     // repaint and a fresh pick each time would make it flicker while the comp sat still.
-    emphasisRandom: { label: "Pick the power word at random", type: "toggle" },
+    linePadding: { label: "Padding between lines", type: "range", min: 0, max: 60, step: 1, unit: "%" },
+  emphasisRandom: { label: "Pick the power word at random", type: "toggle" },
 
     emphasisWords: { label: "Power words (comma separated)", type: "text" },    emphasisAuto: { label: "Auto: numbers and SHOUTED words", type: "toggle" },
     emphasisColor: { label: "Power word colour", type: "color" },
@@ -113,6 +114,7 @@
     boxOpacity: 70,
     boxPadding: 18,
     emphasisWords: "",
+    linePadding: 18,
     emphasisAuto: true,
     emphasisColor: "#ffd400",
     emphasisScale: 110,
@@ -178,7 +180,8 @@
     boxColor: "Colour of the bar.",
     boxOpacity: "How solid the bar is.",
     boxPadding: "Space between the words and the edge of the bar.",
-    emphasisRandom: "Choose one word in each caption without listing any, so the emphasis moves around rather than repeating the same rule.",
+    linePadding: "The gap between lines, as a share of the text size. Three lines with a power word need room for it.",
+  emphasisRandom: "Choose one word in each caption without listing any, so the emphasis moves around rather than repeating the same rule.",
 
     emphasisWords: "Words to hit harder, separated by commas. Leave empty to use the automatic list.",
     emphasisAuto: "Emphasise the words a caption usually leans on, without listing them yourself.",
@@ -208,7 +211,7 @@
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "lines", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY",
-    "inDurMs", "outDurMs"
+    "inDurMs", "outDurMs", "linePadding"
   ];
 
   /**
@@ -221,7 +224,7 @@
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
     "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
-    "inDurMs", "outDurMs"
+    "inDurMs", "outDurMs", "linePadding"
   ];
 
   var PRESETS = [
@@ -235,7 +238,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff6fa5", karaokeDim: "#ffffff", karaokePop: true,
         strokeColor: "#000000", strokeWidth: 8, transform: "uppercase", posY: 76,
@@ -266,7 +269,7 @@
       controls: ["fontFamily", "fontSize", "bold", "karaokeHighlight", "karaokeDim", "karaokePop",
                  "applyStroke", "strokeColor", "strokeWidth",
                  "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
-                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs"],
+                 "tracking", "transform", "maxWords", "splitBySentence", "autoSpaceOutline", "align", "posX", "posY", "inDurMs", "outDurMs", "linePadding"],
       defaults: {
         fontSize: 150, karaokeHighlight: "#ff4df0", karaokeDim: "#8ef7ff", karaokePop: true,
         strokeColor: "#1b2bff", strokeWidth: 12, transform: "uppercase", posY: 76,
@@ -469,9 +472,10 @@
       previewLine: "I did",
       // The emphasis keys are not in PLAIN_CONTROLS: this card exists for them.
       controls: ["fontFamily", "fontSize", "bold", "fill", "applyStroke", "strokeColor",
-                 "strokeWidth", "tracking", "transform", "lines", "maxWords", "splitBySentence",
+                 "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
+                   "tracking", "transform", "lines", "maxWords", "splitBySentence",
                  "align", "posX", "posY",
-                 "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
+                 "linePadding", "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
       defaults: {
         // Bold is left off, like every other card: the weight in the reference is
         // the font doing its job, and a preset that forces bold fights the picker.
@@ -482,6 +486,7 @@
         // larger word without a second font size inside one text document.
         lines: "3",
         emphasisRandom: true, emphasisAuto: false, emphasisWords: "",
+    linePadding: 18,
         // Bigger and heavier, not a second colour - that is the look being copied.
         emphasisColor: "#ffffff", emphasisScale: 148,
         inDurMs: 200, outDurMs: 150

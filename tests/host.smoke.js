@@ -1252,6 +1252,30 @@ check("every line gap is the same, so the padding reads equal",
 check("the gap is wide enough for a 250% word",
   gaps.length > 0 && gaps[0] >= Math.round(150 * (1080 / 1920) * 2.5 * 1.1),
   "gap " + (gaps.length ? gaps[0] : "none") + "px, a 250% word is " + Math.round(150 * (1080 / 1920) * 2.5) + "px");
+console.log("");
+console.log("the padding slider actually spaces the lines");
+
+function gapFor(pad) {
+  var c = fakeCreateComp(1080, 1920, 10);
+  var st = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+  st.linePadding = pad;
+  st.emphasisScale = 250;
+  runCreate(c, [{
+    text: "because everything that I did myself", startMs: 0, endMs: 2000,
+    emphasis: [3],
+    words: [{ text: "because" }, { text: "everything" }, { text: "that" }, { text: "I" }, { text: "did" }, { text: "myself" }]
+  }], st, true);
+  var ys = c.allLayers().map(function (l) {
+    return l._positions.length ? l._positions[l._positions.length - 1][1] : null;
+  }).filter(function (y) { return y !== null; }).sort(function (a, b) { return a - b; });
+  return ys.length >= 2 ? Math.round(ys[1] - ys[0]) : 0;
+}
+var tight = gapFor(0);
+var loose = gapFor(50);
+check("a bigger padding makes a bigger gap between lines",
+  loose > tight, "padding 0 -> " + tight + "px, padding 50 -> " + loose + "px");
+check("and zero padding still leaves room for a 250% word",
+  tight >= Math.round(150 * 2.5 * (1080 / 1920)), "gap " + tight + "px, the word is " + Math.round(150 * 2.5 * (1080 / 1920)) + "px");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);
