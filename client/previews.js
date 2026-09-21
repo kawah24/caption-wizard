@@ -287,7 +287,12 @@
     if (!(settings.applyStroke || settings.filled === false)) return 0;
     var width = (settings.strokeWidth === undefined) ? 6 : settings.strokeWidth;
     var size = (settings.fontSize === undefined) ? 72 : settings.fontSize;
-    return (width / 2) / Math.max(1, size) * 1000;
+    var needed = (width / 2) / Math.max(1, size) * 1000;
+    var already = (settings.tracking === undefined) ? 0 : settings.tracking;
+    // Only the shortfall. A spacing that already covers the outline's bite is left
+    // alone, so the compensation can never be applied twice - which is exactly what
+    // happened to anyone who had widened the spacing by hand before this existed.
+    return Math.max(0, needed - already);
   }
 
   /**

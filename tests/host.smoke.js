@@ -561,6 +561,13 @@ check("it adds half the stroke width, in 1/1000 em",
 check("the preview uses the same rule",
   Math.abs(lcpPreview.autoTracking(spacingStyle) - hostTracking) < 0.01,
   lcpPreview.autoTracking(spacingStyle).toFixed(2) + " vs " + hostTracking);
+check("a spacing already wider than the outline needs is left alone",
+  lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 40, fontSize: 150, tracking: 400 }) === 0,
+  String(lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 40, fontSize: 150, tracking: 400 })));
+check("a partial spacing is topped up, not doubled",
+  Math.abs(lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 40, fontSize: 150, tracking: 90 }) -
+           (133.33 - 90)) < 0.1,
+  String(lcpPreview.autoTracking({ applyStroke: true, strokeWidth: 40, fontSize: 150, tracking: 90 })));
 check("switching it off adds nothing",
   lcpPreview.autoTracking({ applyStroke: true, autoSpaceOutline: false, strokeWidth: 40, fontSize: 150 }) === 0);
 check("a caption with no outline is left alone",

@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.7.0"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.7.1"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.7.0";
+var LCP_VERSION = "1.7.1";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -1012,10 +1012,14 @@ function lcp_buildTextDocument(textLayer, style) {
   // which is what closes letters up at heavy outlines. Adding half the stroke
   // width back to the tracking restores the spacing the preview shows. Both use
   // 1/1000 em, so the same number means the same thing to each.
-  var trackValue = lcp_num(style.tracking, 0);
+  var baseTrack = lcp_num(style.tracking, 0);
+  var trackValue = baseTrack;
   var strokeDrawn = (style.applyStroke || style.filled === false);
   if (strokeDrawn && style.autoSpaceOutline !== false) {
-    trackValue += (lcp_num(style.strokeWidth, 6) / 2) / Math.max(1, lcp_num(style.fontSize, 72)) * 1000;
+    var needed = (lcp_num(style.strokeWidth, 6) / 2) / Math.max(1, lcp_num(style.fontSize, 72)) * 1000;
+    // Topped up, never added twice: a hand-set spacing that already covers the
+    // outline's bite is left exactly as it is.
+    trackValue = Math.max(baseTrack, needed);
   }
   try { doc.tracking = trackValue; } catch (errTrack) { /* older AE */ }
 
