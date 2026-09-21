@@ -216,6 +216,10 @@ check("every style offers the sentence split",
   P.PRESETS.every(function (p) { return (p.controls || []).indexOf("splitBySentence") >= 0; }),
   P.PRESETS.filter(function (p) { return (p.controls || []).indexOf("splitBySentence") < 0; })
     .map(function (p) { return p.id; }).join(", "));
+check("every control explains itself in a tooltip",
+  Object.keys(P.CONTROL_DEFS).every(function (k) { return typeof P.CONTROL_DEFS[k].help === "string" && P.CONTROL_DEFS[k].help.length > 12; }),
+  Object.keys(P.CONTROL_DEFS).filter(function (k) { return !P.CONTROL_DEFS[k].help; }).join(", "));
+
 console.log("the neon styles ship with a glow");
 
 ["neon", "neon-karaoke"].forEach(function (id) {

@@ -17,6 +17,9 @@
     var doc = document;
     var wrap = doc.createElement("div");
     wrap.className = "control";
+    // Every row explains itself, from the help text in CONTROL_DEFS. Set here, before
+    // the font control returns its own markup, so no control misses out.
+    if (def.help) wrap.title = def.help;
 
     if (def.type === "font") {
       return root.LcpFonts.buildControl(key, def, value, onChange);

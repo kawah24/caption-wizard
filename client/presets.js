@@ -127,6 +127,58 @@
   };
 
   /** Everything except the background bar, for clean minimal looks. */
+  /**
+   * One line per control, shown as a tooltip on its row.
+   *
+   * Kept together rather than beside each control: the wording stays in one voice,
+   * and one missing entry is easy to spot instead of hidden among forty.
+   */
+  var CONTROL_HELP = {
+    fontFamily: "The typeface. The list is what After Effects can see.",
+    fontSize: "Caption size. Sizes are authored against a 1920px-wide comp, then scaled to yours.",
+    bold: "A bolder weight, where the font has one. Some fonts offer only a single weight.",
+    fill: "Colour of the letters.",
+    filled: "Off draws hollow letters with the outline only.",
+    applyStroke: "Draw an outline around the letters.",
+    strokeColor: "Colour of the outline.",
+    strokeWidth: "Outline thickness. A heavy outline eats into the space between letters.",
+    applyShadow: "Draw a drop shadow behind the caption.",
+    shadowColor: "Colour of the drop shadow.",
+    shadowAmount: "How strong the drop shadow is.",
+    applyGlow: "Draw a halo behind the caption.",
+    glowColor: "Colour of the halo.",
+    glowAmount: "How far the halo reaches. With Glow on, the caption costs one extra layer each.",
+    tracking: "Space between letters, in 1/1000 em.",
+    transform: "Force upper case, lower case, or leave the words as typed.",
+    lines: "How many lines a caption may wrap to. This is a maximum, not a target.",
+    maxWords: "Most words in one caption before the next one starts.",
+    splitBySentence: "Also break captions at sentence ends, so a caption ends where a sentence does.",
+    autoSpaceOutline: "Widen the spacing to keep a heavy outline from closing the letters up.",
+    align: "Which side the caption grows from, measured at the Horizontal position.",
+    posX: "Horizontal position, as a percentage of the comp width.",
+    posY: "Vertical position, as a percentage of the comp height.",
+    applyBox: "Draw a bar behind the caption.",
+    boxColor: "Colour of the bar.",
+    boxOpacity: "How solid the bar is.",
+    boxPadding: "Space between the words and the edge of the bar.",
+    emphasisWords: "Words to hit harder, separated by commas. Leave empty to use the automatic list.",
+    emphasisAuto: "Emphasise the words a caption usually leans on, without listing them yourself.",
+    emphasisColor: "Colour given to emphasised words.",
+    emphasisScale: "How much larger emphasised words are drawn.",
+    wordByWord: "Give every word its own layer instead of one per caption. Costs many more layers.",
+    karaoke: "Keep the whole phrase on screen and light up each word as it is spoken.",
+    karaokeHighlight: "Colour of the word being spoken.",
+    karaokeDim: "Colour of the words around it.",
+    karaokePop: "Give the spoken word a small pop as it lands.",
+    inDurMs: "How long the caption takes to arrive.",
+    outDurMs: "How long it takes to leave."
+  };
+
+  for (var helpKey in CONTROL_HELP) {
+    if (CONTROL_HELP.hasOwnProperty(helpKey) && CONTROL_DEFS[helpKey]) {
+      CONTROL_DEFS[helpKey].help = CONTROL_HELP[helpKey];
+    }
+  }
   var PLAIN_CONTROLS = [
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",

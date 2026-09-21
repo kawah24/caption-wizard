@@ -194,6 +194,12 @@ check("a name is required, and duplicates are refused",
 check("saved styles can be deleted", /function deleteCustomStyle/.test(js));
 check("the grid offers a way to save and to name",
   /id="saveStyleBtn"/.test(html) && /id="customStyleName"/.test(html));
+check("the renderer puts the help text on the row", /if \(def\.help\) wrap\.title = def\.help;/.test(
+  fs.readFileSync(path.join(__dirname, "..", "client", "controls.js"), "utf8")));
+check("the tabs explain themselves",
+  (html.match(/data-tab="[a-z]+"[^>]*title="/g) || []).length === 4,
+  String((html.match(/data-tab="[a-z]+"[^>]*title="/g) || []).length));
+
 check("the storage helpers guard against a hostile localStorage",
   /catch \(err\) \{ \/\* private mode etc \*\/ \}/.test(js));
 check("switching to the style tab re-fits the stage",
