@@ -519,6 +519,25 @@ var bothLabel = stageLabel({ karaoke: true, wordByWord: true }, words);
 check("karaoke wins when both are on, since the phrase is the karaoke look",
   spanCount(bothLabel) === 3 && /pv-karaoke-words/.test(bothLabel.className),
   "spans: " + spanCount(bothLabel));
+console.log("");
+console.log("the stage shows the power word, whatever the mode");
+
+var pwStage = P.buildStage({ id: "probe", name: "probe", motion: "popIn", previewLine: "sample line" },
+  { karaoke: false, wordByWord: false, emphasisColor: "#f57f7f", emphasisScale: 200, fontSize: 150 },
+  { disableMedia: true, compWidth: 1080, compHeight: 1920,
+    caption: { text: "dolly parton writes", words: [{ text: "dolly" }, { text: "parton" }, { text: "writes" }], emphasis: [1] } });
+var pwAnchor = pwStage.getElementsByClassName("stage-anchor")[0];
+var pwLabel = pwAnchor ? pwAnchor.children[0] : null;
+var spans = pwLabel ? (pwLabel.children || []) : [];
+// The splitter gives the spaces their own spans so the words can be positioned, so this
+// counts words rather than spans.
+check("a caption with a marked power word is split into words",
+  spans.length >= 3, "spans: " + spans.length);
+var markedSpan = null;
+for (var s = 0; s < spans.length; s++) { if (String(spans[s].textContent).indexOf("parton") >= 0) markedSpan = spans[s]; }
+check("and the marked word is coloured and enlarged",
+  !!markedSpan && String(markedSpan.style.color).indexOf("245, 127, 127") >= 0 && !!markedSpan.style.fontSize,
+  markedSpan ? (markedSpan.style.color + " at " + markedSpan.style.fontSize) : "not found");
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

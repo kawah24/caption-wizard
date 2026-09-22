@@ -73,7 +73,7 @@
    * sample line stands in. Word-by-word looks need one span per word so a single
    * word can carry its own colour and size.
    */
-  function buildCaptionLine(preset, settings, text, words) {
+  function buildCaptionLine(preset, settings, text, words, emphasis) {
     var label = document.createElement("span");
     withKaraokeMarker(label, preset, settings);
 
@@ -89,7 +89,13 @@
 
   // Word by word needs one span per word, exactly as the comp builds one layer per
   // word - so the setting decides this, not only the preset.
+  // Word by word needs one span per word, exactly as the comp builds one layer per word.
+  // So does any caption with a marked power word, because the power word is styled
+  // individually - without spans the whole line is one string and nothing can be larger.
+  var marked = (emphasis && emphasis.length) ? emphasis : null;
+  if (marked) label.setAttribute("pv-emphasis", marked.join(","));
   var perWord = !!(settings && (settings.karaoke || settings.wordByWord)) ||
+                !!(marked && marked.length) ||
                 !!(preset && (preset.karaoke || (preset.previewWords && preset.previewWords.length)));
 
     if (perWord && wordTexts && wordTexts.length) {
@@ -554,7 +560,13 @@
     var karaoke = !!(preset && preset.karaoke);
     for (var w = 0; w < wordNodes.length; w++) {
       if (karaoke) break; // karaoke animates its own colours
-      var emphasised = root.LcpPresets.isEmphasisWord(wordNodes[w].textContent, settings, true);
+      // The marked positions come from the plan, so the preview emphasises the same words
+// the host will - the random pick lives in the planner, not in a second rule here.
+            var rawMarks = label.getAttribute ? label.getAttribute("pv-emphasis") : null;
+            var markList = rawMarks ? String(rawMarks).split(",") : null;
+            var emphasised = markList
+              ? markList.indexOf(String(w)) >= 0
+              : root.LcpPresets.isEmphasisWord(wordNodes[w].textContent, settings, true);
       if (emphasised) {
         var emphasisFace = settings.emphasisFamily ? settings.emphasisFamily : settings.fontFamily;
       wordNodes[w].style.fontFamily = resolvePreviewFont(emphasisFace).family;
@@ -775,7 +787,8 @@
       captionText = captionWords[0].text || captionText;
     }
 
-    anchor.appendChild(buildCaptionLine(preset, settings, captionText, captionWords));
+    anchor.appendChild(buildCaptionLine(preset, settings, captionText, captionWords,
+                                          opts.caption ? opts.caption.emphasis : null));
 
     frame.appendChild(anchor);
     stage.appendChild(frame);
