@@ -538,6 +538,23 @@ for (var s = 0; s < spans.length; s++) { if (String(spans[s].textContent).indexO
 check("and the marked word is coloured and enlarged",
   !!markedSpan && String(markedSpan.style.color).indexOf("245, 127, 127") >= 0 && !!markedSpan.style.fontSize,
   markedSpan ? (markedSpan.style.color + " at " + markedSpan.style.fontSize) : "not found");
+console.log("");
+console.log("a padding change restyles the stage in place");
+
+var padPreset = { id: "probe", name: "probe", motion: "popIn", previewLine: "sample" };
+var padStage = P.buildStage(padPreset, { fontSize: 150, linePadding: 18 },
+  { disableMedia: true, compWidth: 1080, compHeight: 1920, caption: { text: "one two", words: null } });
+var padAnchorEl = padStage.getElementsByClassName("stage-anchor")[0];
+var padLabel = padAnchorEl ? padAnchorEl.children[0] : null;
+// The settings are applied straight after the build in the real flow, so the first read
+// happens after an apply too - otherwise this measures the build, not the restyle.
+P.applyStageSettings(padStage, padPreset, { fontSize: 150, linePadding: 18 }, {});
+var loose = padLabel ? String(padLabel.style.lineHeight) : "";
+P.applyStageSettings(padStage, padPreset, { fontSize: 150, linePadding: 5 }, {});
+var tight = padLabel ? String(padLabel.style.lineHeight) : "";
+check("changing the padding restyles the stage without a rebuild",
+  loose !== "" && tight !== "" && loose !== tight, loose + " -> " + tight);
+check("and the value is the one asked for", Number(tight) === 1.05, "lineHeight " + tight);
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

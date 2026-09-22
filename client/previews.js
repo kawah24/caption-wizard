@@ -471,6 +471,10 @@
     var factor = scale || 1;
 
     // The fill carries its own alpha, so the preview shows the same tint the comp will.
+    // Line spacing belongs to the text, not to the background bar, so it is set here
+    // rather than inside the box branch - and it is set on every restyle, not only on
+    // build, which is why the padding slider used to do nothing.
+    label.style.lineHeight = String(1 + (settings.linePadding === undefined ? 18 : settings.linePadding) / 100);
     label.style.color = rgba(settings.fill || "#ffffff",
       (settings.fillOpacity === undefined ? 100 : settings.fillOpacity) / 100);
 
