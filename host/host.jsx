@@ -7,7 +7,7 @@
  * composition.
  *
  * Public entry points (called from the panel through evalScript):
- *   lcp_ping()        -> {"ok":true,"version":"1.8.39"}
+ *   lcp_ping()        -> {"ok":true,"version":"1.8.40"}
  *   lcp_compInfo()    -> active composition summary, or {"ok":false,...}
  *   lcp_listFonts()   -> the fonts After Effects has available, for the picker
  *   lcp_create(json)  -> creates caption layers from a payload
@@ -17,7 +17,7 @@
  * directive-free keeps it checkable with a plain JavaScript parser.
  */
 
-var LCP_VERSION = "1.8.39";
+var LCP_VERSION = "1.8.40";
 var LCP_TAG = "LCP::created";
 
 /**
@@ -555,6 +555,9 @@ function lcp_copyStyle(style) {
 function lcp_emphasisStyle(style) {
   var out = lcp_copyStyle(style);
   out.fill = style.emphasisColor || "#ffd400";
+    // Blank means the power word keeps the text font, so nothing changes until a
+    // second font is deliberately chosen.
+    if (style.emphasisFamily) out.fontFamily = style.emphasisFamily;
   out.fontSize = lcp_num(style.fontSize, 72) * (lcp_num(style.emphasisScale, 110) / 100);
   return out;
 }

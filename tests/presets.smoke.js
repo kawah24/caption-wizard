@@ -27,7 +27,7 @@ var HOST_KEYS = [
   "applyGlow", "glowColor", "glowAmount",
   "tracking", "transform", "lines", "maxWords", "autoSpaceOutline",
   "align", "posX", "posY", "applyBox", "boxColor", "boxOpacity", "boxPadding",
-  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale", "linePadding", "fillOpacity", "emphasisOpacity",
+  "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale", "emphasisFamily", "linePadding", "fillOpacity", "emphasisOpacity",
   "wordByWord", "inDurMs", "outDurMs",
   "karaoke", "karaokeHighlight", "karaokeDim", "karaokePop"
 ];

@@ -1317,6 +1317,21 @@ check("no layer ever writes an opacity above the text opacity",
 check("and nothing writes above the power word opacity either",
   powerTooHigh.length === 0, powerTooHigh.slice(0, 6).join(", "));
 check("the plain lines were actually drawn", plainSeen > 0, String(plainSeen));
+console.log("");
+console.log("a second font, only when one is chosen");
+
+var faceComp = fakeCreateComp(1080, 1920, 10);
+var faceStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
+faceStyle.emphasisFamily = "";
+check("blank keeps the text font", faceStyle.emphasisFamily === "", JSON.stringify(faceStyle.emphasisFamily));
+
+var docs = [];
+faceStyle.emphasisFamily = "Anton";
+var st2 = sandbox.lcp_emphasisStyle(faceStyle);
+check("a chosen font reaches the power word's style", st2.fontFamily === "Anton", String(st2.fontFamily));
+var st3 = sandbox.lcp_emphasisStyle(lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS));
+check("and blank leaves the font untouched", st3.fontFamily === undefined || st3.fontFamily === faceStyle.fontFamily,
+  String(st3.fontFamily));
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");
   process.exit(1);

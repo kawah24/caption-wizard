@@ -556,7 +556,9 @@
       if (karaoke) break; // karaoke animates its own colours
       var emphasised = root.LcpPresets.isEmphasisWord(wordNodes[w].textContent, settings, true);
       if (emphasised) {
-        wordNodes[w].style.color = rgba(settings.emphasisColor || "#ffd400",
+        var emphasisFace = settings.emphasisFamily ? settings.emphasisFamily : settings.fontFamily;
+      wordNodes[w].style.fontFamily = resolvePreviewFont(emphasisFace).family;
+      wordNodes[w].style.color = rgba(settings.emphasisColor || "#ffd400",
         (settings.emphasisOpacity === undefined ? 100 : settings.emphasisOpacity) / 100);
         wordNodes[w].style.fontSize = Math.round(
           (settings.fontSize || 72) * factor * ((settings.emphasisScale || 110) / 100)

@@ -70,7 +70,12 @@
   emphasisRandom: { label: "Pick the power word at random", type: "toggle" },
 
     emphasisWords: { label: "Power words (comma separated)", type: "text" },    emphasisAuto: { label: "Auto: numbers and SHOUTED words", type: "toggle" },
-    emphasisColor: { label: "Power word colour", type: "color" },
+    emphasisFamily: {
+    label: "Power word font",
+    type: "font",
+    help: "A different font for the power word alone. Until you pick one it uses the text font, which is what the library styles do."
+  },
+  emphasisColor: { label: "Power word colour", type: "color" },
     emphasisScale: { label: "Power word size", type: "range", min: 100, max: 250, step: 2, unit: "%" },
     wordByWord: { label: "One word at a time", type: "toggle" },
     karaokeHighlight: { label: "Highlight", type: "color" },
@@ -119,6 +124,7 @@
     linePadding: 18,
     fillOpacity: 100,
     emphasisOpacity: 100,
+    emphasisFamily: "",
     emphasisAuto: true,
     emphasisColor: "#ffd400",
     emphasisScale: 110,
@@ -229,7 +235,7 @@
     "fontFamily", "fontSize", "bold", "fill", "filled", "applyStroke", "strokeColor",
     "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
     "tracking", "transform", "align", "posX", "posY", "splitBySentence", "autoSpaceOutline",
-    "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale",
+    "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisFamily", "emphasisScale",
     "inDurMs", "outDurMs", "linePadding", "fillOpacity"
   ];
 
@@ -481,7 +487,7 @@
                  "strokeWidth", "applyShadow", "shadowColor", "shadowAmount", "applyGlow", "glowColor", "glowAmount",
                    "tracking", "transform", "lines", "maxWords", "splitBySentence",
                  "align", "posX", "posY",
-                 "linePadding", "fillOpacity", "emphasisOpacity", "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisScale"],
+                 "linePadding", "fillOpacity", "emphasisOpacity", "emphasisRandom", "emphasisWords", "emphasisAuto", "emphasisColor", "emphasisFamily", "emphasisScale"],
       defaults: {
         // Bold is left off, like every other card: the weight in the reference is
         // the font doing its job, and a preset that forces bold fights the picker.
@@ -495,6 +501,7 @@
     linePadding: 18,
     fillOpacity: 100,
     emphasisOpacity: 100,
+    emphasisFamily: "",
         // Bigger and heavier, not a second colour - that is the look being copied.
         emphasisColor: "#ffffff", emphasisScale: 148,
         inDurMs: 200, outDurMs: 150
