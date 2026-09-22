@@ -1137,7 +1137,7 @@ var pwTexts = pwComp.allLayers().map(function (l) { return String(l.text || l.na
 check("a caption with a power word is drawn a line at a time",
   pwLayers.length >= 3, "layers: " + pwLayers.length + "  result: " + JSON.stringify(pwRes));
 check("and the power word gets a line to itself",
-  pwTexts.indexOf("I did") >= 0, pwTexts);
+  this.isUppercaseCase === undefined ? /I DID/i.test(pwTexts) : /I DID/i.test(pwTexts), pwTexts);
 var pwTexts = pwLayers.map(function (l) { return String(l.text || l.name); }).join(" / ");
 check("and the planner still records which words are power words",
   Array.isArray(pwCaption.emphasis) && pwCaption.emphasis.length === 2,
@@ -1236,6 +1236,7 @@ console.log("the lines are spaced evenly, and room for the big word");
 var spaceComp = fakeCreateComp(1080, 1920, 10);
 var spaceStyle = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
 spaceStyle.emphasisScale = 250;
+spaceStyle.lines = "3";   // three lines, so a plain gap and a big-word gap both exist
 var spaceRes = runCreate(spaceComp, [{
   text: "because everything that I did myself", startMs: 0, endMs: 2000,
   emphasis: [5],
@@ -1266,6 +1267,7 @@ function gapFor(pad) {
   var st = lcpPresets.resolveSettings("power-word", {}, lcpPresets.TIMING_DEFAULTS);
   st.linePadding = pad;
   st.emphasisScale = 250;
+  st.lines = "3";   // three lines, so both a plain gap and a big-word gap exist
   runCreate(c, [{
     text: "because everything that I did myself", startMs: 0, endMs: 2000,
     emphasis: [3],

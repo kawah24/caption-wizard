@@ -155,9 +155,10 @@ check("one preset resetting does not touch another",
 
 console.log("");
 console.log("caption length sits with the style, not the timing tab");
-check("every preset defaults to 3 words per caption",
+check("the library cards default to 3 words, and the power word card to 4",
   P.PRESETS.every(function (p) {
-    return P.resolveSettings(p.id, {}).maxWords === 3;
+    var want = p.id === "power-word" ? 4 : 3;
+          return P.resolveSettings(p.id, {}).maxWords === want;
   }),
   JSON.stringify(P.PRESETS.map(function (p) { return P.resolveSettings(p.id, {}).maxWords; })));
 check("maxWords is a style control", !!P.CONTROL_DEFS.maxWords);
@@ -245,12 +246,12 @@ if (pwPreset) {
   // The mechanism changed: the comp now draws a caption as one layer per line and
   // sizes the line that holds a power word, so word by word is no longer what makes
   // emphasis appear. This pins the shape the reference asks for instead.
-  check("it asks for three lines, so the power word can have one to itself",
-    String(pwSettings.lines) === "3", "lines = " + pwSettings.lines);
+  check("it asks for two lines, so the power word can have one to itself",
+        String(pwSettings.lines) === "2", "lines = " + pwSettings.lines);
   check("and it is not word by word, which would lose the lines",
     pwSettings.wordByWord !== true, "wordByWord = " + pwSettings.wordByWord);
-  check("the emphasis is size, not a second colour",
-    String(pwSettings.emphasisColor).toLowerCase() === "#ffffff" && pwSettings.emphasisScale > 130,
+  check("the power word is not the same colour as the words around it",
+        String(pwSettings.emphasisColor).toLowerCase() !== String(pwSettings.fill).toLowerCase(),
     pwSettings.emphasisColor + " at " + pwSettings.emphasisScale + "%");
   check("its controls expose the emphasis keys",
     pwPreset.controls.indexOf("emphasisScale") >= 0 &&
@@ -285,6 +286,14 @@ check('the card can reach the padding slider', pwPreset.controls.indexOf('linePa
 check('and every style carries a padding value', typeof P.resolveSettings('karaoke', {}).linePadding === 'number', String(P.resolveSettings('karaoke', {}).linePadding));
 
 check('the card can reach both opacities', pwPreset.controls.indexOf('fillOpacity') >= 0 && pwPreset.controls.indexOf('emphasisOpacity') >= 0);
+
+var pwDefaults = P.resolveSettings('power-word', {});
+
+check('the power word card opens with the values that were asked for',
+  pwDefaults.transform === 'uppercase' && pwDefaults.lines === '2' && pwDefaults.maxWords === 4 &&
+  pwDefaults.splitBySentence === true && pwDefaults.linePadding === 5 &&
+  pwDefaults.emphasisScale === 200 && String(pwDefaults.emphasisColor).toLowerCase() === '#f57f7f',
+  JSON.stringify({transform: pwDefaults.transform, lines: pwDefaults.lines, maxWords: pwDefaults.maxWords, split: pwDefaults.splitBySentence, pad: pwDefaults.linePadding, size: pwDefaults.emphasisScale, colour: pwDefaults.emphasisColor}));
 
 if (failures) {
   console.log(failures + " of " + checks + " checks FAILED");

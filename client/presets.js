@@ -492,18 +492,18 @@
         // Bold is left off, like every other card: the weight in the reference is
         // the font doing its job, and a preset that forces bold fights the picker.
         fontSize: 150, fill: "#ffffff",
-        applyStroke: false, applyShadow: false, transform: "none", posY: 50,
-        // Three lines, and one layer per line in the comp: the line holding the power
-        // word is drawn with the emphasis style, which is how the reference gets a
-        // larger word without a second font size inside one text document.
-        lines: "3",
+        applyStroke: false, applyShadow: false,
+        transform: "uppercase", lines: "2", maxWords: 4, splitBySentence: true, posY: 50,
+        // Two lines, one layer each: the line holding the power word is drawn with the
+        // emphasis style, which is how a larger word fits a text document that holds a
+        // single font size.
         emphasisRandom: true, emphasisAuto: false, emphasisWords: "",
-    linePadding: 18,
-    fillOpacity: 100,
-    emphasisOpacity: 100,
-    emphasisFamily: "",
-        // Bigger and heavier, not a second colour - that is the look being copied.
-        emphasisColor: "#ffffff", emphasisScale: 148,
+        linePadding: 5,
+        fillOpacity: 100,
+        emphasisOpacity: 100,
+        emphasisFamily: "",
+        // A warm coral, drawn much larger than the words around it.
+        emphasisColor: "#f57f7f", emphasisScale: 200,
         inDurMs: 200, outDurMs: 150
       }
     }
