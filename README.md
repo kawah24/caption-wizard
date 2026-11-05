@@ -434,6 +434,11 @@ on the cue end, so timing never drifts across a long transcript.
 - **After Effects only.** The manifest targets `AEFT`.
 - **`large-v3` is not cached**; it needs the one-time download toggle.
 
+## Support
+
+If this saves you time, you can [buy me a coffee on Ko-fi](https://ko-fi.com/rockhouse).
+No account, no nag screen — the tool stays free and MIT either way.
+
 ## License
 
 MIT - see [LICENSE](LICENSE). No font files are bundled and nothing from
