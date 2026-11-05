@@ -12,6 +12,15 @@ anywhere.
 
 ---
 
+## Screenshots
+
+![Style gallery and control set](docs/shot-styles.jpg)
+
+Rendered by the panel's own modules through `preview/index.html` — the same
+`presets.js` / `previews.js` / `controls.js` the panel runs inside After Effects, so
+nothing here is a mockup. The stage backdrop is deliberately empty: no footage is
+loaded, and the panel ships no media.
+
 ## Install (Windows)
 
 ### Option A — the helper script
