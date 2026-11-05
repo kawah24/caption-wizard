@@ -433,3 +433,9 @@ on the cue end, so timing never drifts across a long transcript.
   anchor point, which sits at the text origin.
 - **After Effects only.** The manifest targets `AEFT`.
 - **`large-v3` is not cached**; it needs the one-time download toggle.
+
+## License
+
+MIT - see [LICENSE](LICENSE). No font files are bundled and nothing from
+Adobe's SDK is redistributed; the panel talks to After Effects through a small
+hand-written CEP bridge.
