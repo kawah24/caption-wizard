@@ -14,12 +14,17 @@ anywhere.
 
 ## Screenshots
 
-![Style gallery and control set](docs/shot-styles.jpg)
+![The panel docked in After Effects](docs/shot-after-effects.png)
 
-Rendered by the panel's own modules through `preview/index.html` — the same
-`presets.js` / `previews.js` / `controls.js` the panel runs inside After Effects, so
-nothing here is a mockup. The stage backdrop is deliberately empty: no footage is
-loaded, and the panel ships no media.
+The real panel inside After Effects 2026, Style tab: live preview at the comp's own
+aspect (here 1080 × 1920), the style presets, and the full control set. The 476 font
+families in the list come from the host — none are bundled with the extension.
+
+![Style gallery and controls, outside After Effects](docs/shot-styles.jpg)
+
+The same `presets.js` / `previews.js` / `controls.js` rendered through
+`preview/index.html` in a browser, so styles can be checked without opening AE. The
+stage is empty there because no footage is loaded.
 
 ## Install (Windows)
 
