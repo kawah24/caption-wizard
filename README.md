@@ -20,6 +20,14 @@ The real panel inside After Effects 2026, Style tab: live preview at the comp's 
 aspect (here 1080 × 1920), the style presets, and the full control set. The 476 font
 families in the list come from the host — none are bundled with the extension.
 
+![All 21 style presets](docs/shot-ae-styles.jpg)
+
+The same panel scrolled to the preset grid: 21 styles — karaoke (Karaoke, Neon Karaoke),
+word-by-word (Viral Pop, Word Punch), the moves (Slide Up/Down/Left/Right, Pop In, Zoom
+Punch), the texture looks (Blur Fade, Cinematic, Flicker Out, Pulse) and the plain ones
+(Basic, Outline Only, Power Word). Each card previews with its own CSS animation; drop a
+still or clip into `client/assets/previews/` and the card uses that instead.
+
 ![Style gallery and controls, outside After Effects](docs/shot-styles.jpg)
 
 The same `presets.js` / `previews.js` / `controls.js` rendered through
